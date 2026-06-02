@@ -1,0 +1,6 @@
+.vscode/ 
+build/
+*/build/
+daisy-tdm-hexa/
+DaisySP/
+libDaisy/
