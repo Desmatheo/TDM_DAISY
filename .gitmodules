@@ -1,9 +1,9 @@
 [submodule "lib/Q"]
     path = lib/Q
-    url = git@github.com:cycfi/q.git
+	url = https://github.com/cycfi/q.git
 [submodule "lib/gcem"]
     path = lib/gcem
-    url = git@github.com:kthohr/gcem.git
+	url = https://github.com/kthohr/gcem.git
 [submodule "lib/infra"]
     path = lib/infra
-    url = git@github.com:cycfi/infra.git
+	url = https://github.com/cycfi/infra.git
