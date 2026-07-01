@@ -11,8 +11,7 @@ build/
 # source directly so the project clones and builds in one step, but we drop
 # their internal test suites / optional nested submodules (not needed to
 # build the firmware) and their stale submodule config files.
-libDaisy/tests/
-libDaisy/.gitmodules
-DaisySP/.gitmodules
-DaisySP/DaisySP-LGPL/
-lib/*
+daisy-tdm-hexa/
+lib/Q/
+lib/gcem/
+lib/infra/
