@@ -12,6 +12,3 @@ build/
 # their internal test suites / optional nested submodules (not needed to
 # build the firmware) and their stale submodule config files.
 daisy-tdm-hexa/
-lib/Q/
-lib/gcem/
-lib/infra/
