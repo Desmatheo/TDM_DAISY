@@ -38,11 +38,11 @@ int main(void)
     // earth_effects[4]->setMix(0.01f);
     // earth_effects[5]->setMix(0.01f);
 
-    #if MIDI_USB_DE_LA_MORT
+#if MIDI_USB_DE_LA_MORT
     MidiUsbHandler::Config midi_cfg;
     midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
     midi.Init(midi_cfg);
-    #endif
+#endif
 
     // With block 32 @ 48 kHz the callback should run 1500 times/s.
     // 0 calls/s means no BCLK/FS from the Teensy: check wiring and that
@@ -57,10 +57,17 @@ int main(void)
         midi.Listen();
 
         if (midi.HasEvents()){
+            auto event = midi.PopEvent();
+            if (event.type == MidiMessageType::ControlChange){
+                auto cc = event.AsControlChange();
+                const int channel = cc.channel;
+                const int ctrl    = cc.control_number;
+                const float value = cc.value / 127.0f;
 
-
-            
-
+                if (channel < 6 && strings[channel].active_effect != nullptr){
+                    strings[channel].active_effect->setParameter(ctrl, value);
+                }
+            }
         }
 #endif
         hw.seed.SetLed(false);
