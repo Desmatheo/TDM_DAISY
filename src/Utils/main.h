@@ -47,8 +47,8 @@ public :
 };
 
 StringUtil strings[] = {
-    StringUtil(EffectType::Bypass, 0),
-    StringUtil(EffectType::Bypass, 1),
+    StringUtil(EffectType::Earth, 0),
+    StringUtil(EffectType::Earth, 1),
     StringUtil(EffectType::Bypass, 2),
     StringUtil(EffectType::Bypass, 3),
     StringUtil(EffectType::Bypass, 4),

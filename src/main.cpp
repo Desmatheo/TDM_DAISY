@@ -31,6 +31,8 @@ int main(void)
     
     // earth_effects[0]->setOctaveMode(2);
     // earth_effects[1]->setOctaveMode(2);
+    // strings[0].active_effect = earth_effects[0];
+    // strings[1].active_effect = earth_effects[1];
     // earth_effects[2]->setMix(0.01f);
     // earth_effects[3]->setMix(0.01f);
     // earth_effects[4]->setMix(0.01f);

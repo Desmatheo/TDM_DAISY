@@ -17,7 +17,7 @@ using namespace daisysp;
 #include "../Utils/Effect.h"
 
 #if USE_DAISY
-class EarthEffect {
+class EarthEffect : public Effect {
 
     public:
 
@@ -51,7 +51,7 @@ class EarthEffect {
 
 
 #if USE_DAISY
-    void update(const float** in, float** out, int idx);
+    void update(const float** in, float** out, int idx) override;
     float updateTest(const float in, int idx);
 #endif
 
@@ -61,7 +61,7 @@ class EarthEffect {
     void setOctaveMode(int mode);          // 3-Way Switch 2 (0, 1, 2)
 
 #if USE_DAISY
-    void setParameter(int param_id, float value);
+    void setParameter(int param_id, float value) override;
 #endif
 
     // --- METHODES ET VARIABLES PARTAGEES ---
