@@ -1,7 +1,7 @@
 #pragma once 
 
 // /!\ Attention, si on utilise le MIDI, l'usb servira qu'a ça. Faudra un adaptateur si on veut faire du seriamessaginggneial
-#define SerialMessagingGenial 1
+#define SerialMessagingGenial 0
 
 #if SerialMessagingGenial
 #define CPU_METER 0
