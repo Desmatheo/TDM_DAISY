@@ -4,6 +4,6 @@
 [submodule "lib/gcem"]
     path = lib/gcem
     url = git@github.com:kthohr/gcem.git
-[submodule "lib/gcem"]
-    path = lib/gcem
+[submodule "lib/infra"]
+    path = lib/infra
     url = git@github.com:cycfi/infra.git
