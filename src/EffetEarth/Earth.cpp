@@ -98,43 +98,6 @@ void EarthEffect::update(const float** in, float** out, int idx) {
     out[1][idx] = out[0][idx];
 }
 
-float EarthEffect::updateTest(const float in, int idx) {
-    float inputL;
-    float inputR;
-
-    inputL = inputR = in + 1e-9f; // Anti-denormal
-
-    buff[bin_counter] = inputL;
-    
-    if (bin_counter > 4) {
-        std::span<const float, resample_factor> in_chunk(&(buff[0]), resample_factor);
-        const auto sample = decimate2(in_chunk); 
-
-        float octave_mix = 0.0;
-
-
-        if (effect_mode == 1) octave_mix += octave.up1() * 6.0;
-        if (effect_mode == 2) octave_mix += octave.down1() * 6.0;
-        if (effect_mode == 3) octave_mix += octave.down2() * 6.0;
-
-        auto out_chunk = interpolate(octave_mix);
-        for (size_t j = 0; j < out_chunk.size(); ++j) {
-            buff_out[j] = out_chunk[j];
-        }
-    }
-
-    // Avance le compteur de temps (0 à 5)
-    bin_counter += 1;
-    if (bin_counter > 5) bin_counter = 0;
-
-    // Le signal d'effet est le son de l'octaver (ou 0 si désactivé)
-    float octave_signal = buff_out[bin_counter];
-
-    float effect_output = octave_signal;
-
-    return (inputL * dryMix + effect_output * wetMix) * volume; // Implémentation factice pour satisfaire le compilateur
-}
-
 // --- Implémentation des Setters Spécifiques ---
 
 void EarthEffect::setMix(float mix) {

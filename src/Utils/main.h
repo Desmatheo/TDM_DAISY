@@ -5,6 +5,7 @@
 
 #include "Effect.h"
 #include "../EffetEarth/Earth.h"
+#include "../EffetDelay/Delay.h"
 
 
 #if MIDI_USB_DE_LA_MORT
@@ -19,7 +20,7 @@ extern DaisyTdmSlave hw;
 
 
 extern EarthEffect* earth_effects[6];
-// DelayEffect* delay_effects[6] = {nullptr};
+extern DelayEffect* delay_effects[6];
 
 enum class EffectType {
     Mute,

@@ -8,7 +8,8 @@ MidiUsbHandler midi;
 
 DaisyTdmSlave hw;
 
-EarthEffect* earth_effects[6] = {nullptr};
+EarthEffect* earth_effects[6];
+DelayEffect* delay_effects[6];
 
 StringUtil strings[] = {
     StringUtil(EffectType::Bypass, 0),
@@ -20,8 +21,8 @@ StringUtil strings[] = {
 };
 
 // ================================================================
-
 alignas(EarthEffect) static uint8_t earth_mem[6 * sizeof(EarthEffect)];
+alignas(DelayEffect) static uint8_t delay_mem[6 * sizeof(DelayEffect)];
 
 #define STATUS_PERIOD_MS 1000
 
@@ -40,20 +41,38 @@ int main(void)
     hw.StartAudio(AudioCallback);
 
     memset(earth_mem, 0, 6 * sizeof(EarthEffect));
+    memset(delay_mem, 0, 6 * sizeof(DelayEffect));
 
     for (int j = 0; j < 6; j++){ 
         earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
+        delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
     }
+
     
-    
-    // earth_effects[0]->setOctaveMode(2);
-    // earth_effects[1]->setOctaveMode(2);
-    // strings[0].active_effect = earth_effects[0];
-    // strings[1].active_effect = earth_effects[1];
-    // earth_effects[2]->setMix(0.01f);
-    // earth_effects[3]->setMix(0.01f);
-    // earth_effects[4]->setMix(0.01f);
-    // earth_effects[5]->setMix(0.01f);
+    // for (int i = 0; i < 6; ++i) {
+    //     switch(strings[i].type) {
+    //         case EffectType::Earth:
+    //             strings[i].active_effect = earth_effects[i];
+    //             break;
+    //         case EffectType::Delay:
+    //             strings[i].active_effect = delay_effects[i];
+    //             break;
+    //         default:
+    //             strings[i].active_effect = nullptr; // pour Bypass ou Mute
+    //             break;
+    //     }
+    // }   
+
+    // // --- Réglages par défaut pour le test ---
+    // if (strings[0].type == EffectType::Earth) {
+    //     earth_effects[0]->setOctaveMode(2); // Octave basse
+    //     earth_effects[0]->setMix(0.8f);
+    // }
+    // if (strings[1].type == EffectType::Delay) {
+    //     delay_effects[1]->setMix(1.0f);
+    //     delay_effects[1]->setDelayTime(0.7f);
+    //     delay_effects[1]->setFeedback(0.6f);
+    // }
 
 #if MIDI_USB_DE_LA_MORT
     MidiUsbHandler::Config midi_cfg;

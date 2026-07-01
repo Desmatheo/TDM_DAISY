@@ -20,9 +20,9 @@ static void MidiHandlingDeLaMort(){
         if (corde >= 0 && corde < 6) {
             strings[corde].type = EffectType::Delay;
             strings[corde].active_effect = nullptr;
-            // strings[corde].active_effect = mesDelays[corde].setEnabled(true);
+            strings[corde].active_effect = delay_effects[corde];
 
-            // mesDelays[corde].setParameter(potard, value);
+            delay_effects[corde]->setParameter(potard, value);
         }
     }
     else if (control >= 50 && control <= 85) { 

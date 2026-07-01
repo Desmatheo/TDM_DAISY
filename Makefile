@@ -7,6 +7,7 @@ TARGET = daisy_tdm_hexa
 # Sources
 CPP_SOURCES = 	src/main.cpp \
              	$(wildcard src/EffetEarth/Earth.cpp) \
+             	$(wildcard src/EffetDelay/Delay.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/delays/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/filters/*.cpp) \
@@ -19,7 +20,7 @@ DAISYSP_DIR = lib/DaisySP
 CPP_STANDARD = -std=gnu++20
 
 C_INCLUDES += -Ilib/Q/q_lib/include \
-              -Ilib/Q/infra/include \
+              -Ilib/infra/include \
               -Ilib/gcem/include \
 			  -Isrc
 
@@ -29,4 +30,3 @@ OPT = -O3 -ffast-math
 # Core location, and generic makefile.
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
-

@@ -52,7 +52,6 @@ class EarthEffect : public Effect {
 
 #if USE_DAISY
     void update(const float** in, float** out, int idx) override;
-    float updateTest(const float in, int idx);
 #endif
 
     void setMix(float mix);                // Ctrl 2 (0.0 -> 1.0)
