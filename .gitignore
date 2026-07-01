@@ -1,6 +1,18 @@
-.vscode/ 
+# Build outputs
 build/
-*/build/
-daisy-tdm-hexa/
-DaisySP/
-libDaisy/
+*.o
+*.d
+*.lst
+
+# macOS
+.DS_Store
+
+# Vendored libraries: these were git submodules upstream. We embed their
+# source directly so the project clones and builds in one step, but we drop
+# their internal test suites / optional nested submodules (not needed to
+# build the firmware) and their stale submodule config files.
+libDaisy/tests/
+libDaisy/.gitmodules
+DaisySP/.gitmodules
+DaisySP/DaisySP-LGPL/
+lib/*

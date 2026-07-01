@@ -1,0 +1,33 @@
+{
+  "configurations": [
+    {
+      "cStandard": "c11",
+      "compilerPath": "arm-none-eabi-g++.exe",
+      "cppStandard": "c++20",
+      "intelliSenseMode": "gcc-arm",
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE",
+        "USE_HAL_DRIVER",
+        "STM32H750xx"
+      ],
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/lib/libDaisy/**",
+        "${workspaceFolder}/lib/DaisySP/**",
+        "${workspaceFolder}/lib/DaisySP/src/**",
+        "${workspaceFolder}/src/Utils/**"
+      ],
+      "name": "Win32",
+      "windowsSdkVersion": "10.0.17763.0", 
+      "compilerArgs": [
+          "-mcpu=cortex-m7",
+          "-mthumb",
+          "-mfpu=fpv5-d16",
+          "-mfloat-abi=hard"
+      ]
+    }
+  ],
+  "version": 4
+}

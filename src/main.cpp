@@ -1,59 +1,96 @@
+#include "Utils/main.h"
 
-#include "daisy_core.h"
-#include "audio_processing.h"
-#include "heartware_pod_prototype.h"
+using namespace daisy; 
 
 // ================================================================
-HeartwarePodPrototype heartware;
 
-#if USE_SDCARD
-#include "include/WavHexaPlayer.h"
+alignas(EarthEffect) static uint8_t earth_mem[6 * sizeof(EarthEffect)];
 
-SdmmcHandler   sdcard;
-FatFSInterface fsi;
-WavHexaPlayer  sampler;
-#endif
-
-#define MAIN_LOOP_DELAY 1   // milliseconds
-#define AUDIO_BLOCK_SIZE 32 // keep this to 32
-
+#define STATUS_PERIOD_MS 1000
 
 // ================================================================
 int main(void)
 {
-    heartware.Init(1);
-    heartware.SetAudioBlockSize(AUDIO_BLOCK_SIZE);
+    hw.Init(true);
 
-#if USE_SDCARD
+    // Non-blocking USB serial: the board keeps running even if no
+    // serial monitor is connected.
 
-    SdmmcHandler::Config sd_cfg;
-    sd_cfg.Defaults();
-    sdcard.Init(sd_cfg);
-    fsi.Init(FatFSInterface::Config::MEDIA_SD);
-    f_mount(&fsi.GetSDFileSystem(), "/", 1);
+#if SerialMessagingGenial
+    hw.seed.StartLog(false);
+#endif
 
-    sampler.Init(fsi.GetSDPath());
-    
-    // Ouvre les 6 fichiers
-    for(int i = 0; i < 6; i++) {
-        if (i < sampler.GetNumberFiles()) {
-            sampler.OpenHex(i, i);
-            sampler.SetLoopingHex(i, true);
-        }
+    hw.StartAudio(AudioCallback);
+
+    memset(earth_mem, 0, 6 * sizeof(EarthEffect));
+
+    for (int j = 0; j < 6; j++){ 
+        earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
     }
+    
+    
+    // earth_effects[0]->setOctaveMode(2);
+    // earth_effects[1]->setOctaveMode(2);
+    // earth_effects[2]->setMix(0.01f);
+    // earth_effects[3]->setMix(0.01f);
+    // earth_effects[4]->setMix(0.01f);
+    // earth_effects[5]->setMix(0.01f);
 
-#endif
+    #if MIDI_USB_DE_LA_MORT
+    MidiUsbHandler::Config midi_cfg;
+    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
+    midi.Init(midi_cfg);
+    #endif
 
-    heartware.StartAdc();
-    heartware.StartAudio(AudioCallback);
+    // With block 32 @ 48 kHz the callback should run 1500 times/s.
+    // 0 calls/s means no BCLK/FS from the Teensy: check wiring and that
+    // the Teensy sketch is running. ~1378/s means the Teensy was left at
+    // its default 44.1 kHz (AUDIO_SAMPLE_RATE_EXACT not overridden).
+    uint32_t last_status = System::GetNow();
 
-    while (1)
+    while(1)
     {
-#if USE_SDCARD
-        sampler.update();
+
+#if MIDI_USB_DE_LA_MORT
+        midi.Listen();
+
+        if (midi.HasEvents()){
+
+
+            
+
+        }
+#endif
+        hw.seed.SetLed(false);
+
+        if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
+        {
+            last_status = System::GetNow();
+
+            const uint32_t cb_per_s = audio_diag.callback_count;
+            audio_diag.callback_count = 0;
+
+            hw.seed.PrintLine("callbacks/s: %lu (attendu ~%d)",
+                              cb_per_s,
+                              (int)(DaisyTdmSlave::kSampleRate
+                                    / DaisyTdmSlave::kBlockSize));
+            float peaks[DaisyTdmSlave::kNumInputs];
+            for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
+                peaks[ch] = audio_diag.in_peak[ch];
+            audio_diag.ResetPeaks();
+
+#if SerialMessagingGenial
+            hw.seed.PrintLine(
+                "Peaks IN - C1/2: " FLT_FMT3 " / " FLT_FMT3 " | C3/4: " FLT_FMT3 " / " FLT_FMT3 " | C5/6: " FLT_FMT3 " / " FLT_FMT3 " | C7/8: " FLT_FMT3 " / " FLT_FMT3 ,
+                FLT_VAR3(peaks[0]), FLT_VAR3(peaks[1]),
+                FLT_VAR3(peaks[2]), FLT_VAR3(peaks[3]),
+                FLT_VAR3(peaks[4]), FLT_VAR3(peaks[5]), 
+                FLT_VAR3(peaks[6]), FLT_VAR3(peaks[7])
+            );
 #endif
 
-        heartware.loop();
-        System::Delay(MAIN_LOOP_DELAY);
+        }
+
+        System::Delay(1);
     }
 }
