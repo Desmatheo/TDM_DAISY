@@ -1,15 +1,11 @@
 #ifndef AUDIO_PROCESSING_H
 #define AUDIO_PROCESSING_H
 
-#include <cmath>
-#include "daisy_core.h"
-#include "daisy_tdm_slave.h"
-#include "../EffetEarth/Earth.h" // Inclusion de l'unique effet conservé
+#include "main.h" 
+
 
 extern DaisyTdmSlave hw;
 
-// Récupération des 6 instances de l'effet (une par corde) allouées dans le main
-extern EarthEffect* earth_effects[6];
 
 // ================================================================
 // Diagnostics shared between the audio callback (IRQ context) and the
@@ -84,7 +80,7 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                     out_arr[0][0] = in_sample;
                 }
 
-                out[j][i] = out_arr[0][0] * 0.1f; 
+                out[j][i] = out_arr[0][0]; // * 0.1f; 
             }
         }
 

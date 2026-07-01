@@ -2,6 +2,23 @@
 
 using namespace daisy; 
 
+#if MIDI_USB_DE_LA_MORT
+MidiUsbHandler midi;
+#endif
+
+DaisyTdmSlave hw;
+
+EarthEffect* earth_effects[6] = {nullptr};
+
+StringUtil strings[] = {
+    StringUtil(EffectType::Bypass, 0),
+    StringUtil(EffectType::Bypass, 1),
+    StringUtil(EffectType::Bypass, 2),
+    StringUtil(EffectType::Bypass, 3),
+    StringUtil(EffectType::Bypass, 4),
+    StringUtil(EffectType::Bypass, 5)
+};
+
 // ================================================================
 
 alignas(EarthEffect) static uint8_t earth_mem[6 * sizeof(EarthEffect)];
@@ -57,38 +74,32 @@ int main(void)
         midi.Listen();
 
         if (midi.HasEvents()){
-            auto event = midi.PopEvent();
-            if (event.type == MidiMessageType::ControlChange){
-                auto cc = event.AsControlChange();
-                const int channel = cc.channel;
-                const int ctrl    = cc.control_number;
-                const float value = cc.value / 127.0f;
-
-                if (channel < 6 && strings[channel].active_effect != nullptr){
-                    strings[channel].active_effect->setParameter(ctrl, value);
-                }
-            }
+            MidiHandlingDeLaMort();
         }
 #endif
-        hw.seed.SetLed(false);
-
+        bool led = false;
         if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
         {
+            // if (strings[0].type == EffectType::Earth) {
+            //     led = !led;
+            // }
+            // hw.seed.SetLed(led);
+
             last_status = System::GetNow();
 
             const uint32_t cb_per_s = audio_diag.callback_count;
             audio_diag.callback_count = 0;
-
-            hw.seed.PrintLine("callbacks/s: %lu (attendu ~%d)",
-                              cb_per_s,
-                              (int)(DaisyTdmSlave::kSampleRate
-                                    / DaisyTdmSlave::kBlockSize));
             float peaks[DaisyTdmSlave::kNumInputs];
             for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
                 peaks[ch] = audio_diag.in_peak[ch];
             audio_diag.ResetPeaks();
 
 #if SerialMessagingGenial
+            hw.seed.PrintLine("callbacks/s: %lu (attendu ~%d)",
+                              cb_per_s,
+                              (int)(DaisyTdmSlave::kSampleRate
+                                    / DaisyTdmSlave::kBlockSize));
+
             hw.seed.PrintLine(
                 "Peaks IN - C1/2: " FLT_FMT3 " / " FLT_FMT3 " | C3/4: " FLT_FMT3 " / " FLT_FMT3 " | C5/6: " FLT_FMT3 " / " FLT_FMT3 " | C7/8: " FLT_FMT3 " / " FLT_FMT3 ,
                 FLT_VAR3(peaks[0]), FLT_VAR3(peaks[1]),

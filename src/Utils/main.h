@@ -8,17 +8,17 @@
 
 
 #if MIDI_USB_DE_LA_MORT
-MidiUsbHandler midi;
+extern MidiUsbHandler midi;
 #endif
 
 #if CPU_METER
 CpuLoadMeter loadMeter;
 #endif
 
-DaisyTdmSlave hw;
+extern DaisyTdmSlave hw;
 
 
-EarthEffect* earth_effects[6] = {nullptr};
+extern EarthEffect* earth_effects[6];
 // DelayEffect* delay_effects[6] = {nullptr};
 
 enum class EffectType {
@@ -46,17 +46,9 @@ public :
     }
 };
 
-StringUtil strings[] = {
-    StringUtil(EffectType::Earth, 0),
-    StringUtil(EffectType::Earth, 1),
-    StringUtil(EffectType::Bypass, 2),
-    StringUtil(EffectType::Bypass, 3),
-    StringUtil(EffectType::Bypass, 4),
-    StringUtil(EffectType::Bypass, 5)
-};
+extern StringUtil strings[];
 
 
 
 #include "audio_processing.h"
-
-
+#include "midi_processing.h"
