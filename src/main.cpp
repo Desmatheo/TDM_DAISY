@@ -48,32 +48,6 @@ int main(void)
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
     }
 
-    
-    // for (int i = 0; i < 6; ++i) {
-    //     switch(strings[i].type) {
-    //         case EffectType::Earth:
-    //             strings[i].active_effect = earth_effects[i];
-    //             break;
-    //         case EffectType::Delay:
-    //             strings[i].active_effect = delay_effects[i];
-    //             break;
-    //         default:
-    //             strings[i].active_effect = nullptr; // pour Bypass ou Mute
-    //             break;
-    //     }
-    // }   
-
-    // // --- Réglages par défaut pour le test ---
-    // if (strings[0].type == EffectType::Earth) {
-    //     earth_effects[0]->setOctaveMode(2); // Octave basse
-    //     earth_effects[0]->setMix(0.8f);
-    // }
-    // if (strings[1].type == EffectType::Delay) {
-    //     delay_effects[1]->setMix(1.0f);
-    //     delay_effects[1]->setDelayTime(0.7f);
-    //     delay_effects[1]->setFeedback(0.6f);
-    // }
-
 #if MIDI_USB_DE_LA_MORT
     MidiUsbHandler::Config midi_cfg;
     midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
@@ -100,11 +74,6 @@ int main(void)
         bool led = false;
         if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
         {
-            // if (strings[0].type == EffectType::Earth) {
-            //     led = !led;
-            // }
-            // hw.seed.SetLed(led);
-
             last_status = System::GetNow();
 
             const uint32_t cb_per_s = audio_diag.callback_count;
