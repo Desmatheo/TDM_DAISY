@@ -49,14 +49,14 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
     for(size_t i = 0; i < size; i++)
     {
         //ancienne partie du code de Yannick
-        for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
-        {
-            const float mag = fabsf(in[ch][i]);
-            if(mag > audio_diag.in_peak[ch])
-                audio_diag.in_peak[ch] = mag;
-            if(mag > 0.05f)
-                signal_present = true;
-        }
+        // for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
+        // {
+        //     const float mag = fabsf(in[ch][i]);
+        //     if(mag > audio_diag.in_peak[ch])
+        //         audio_diag.in_peak[ch] = mag;
+        //     if(mag > 0.05f)
+        //         signal_present = true;
+        // }
 
 
 

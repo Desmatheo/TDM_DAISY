@@ -93,6 +93,7 @@ int main(void)
         midi.Listen();
 
         if (midi.HasEvents()){
+            hw.seed.SetLed(true);
             MidiHandlingDeLaMort();
         }
 #endif
