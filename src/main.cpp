@@ -12,7 +12,7 @@ EarthEffect* earth_effects[6];
 DelayEffect* delay_effects[6];
 
 StringUtil strings[] = {
-    StringUtil(EffectType::Bypass, 0),
+    StringUtil(EffectType::Earth, 0),
     StringUtil(EffectType::Bypass, 1),
     StringUtil(EffectType::Bypass, 2),
     StringUtil(EffectType::Bypass, 3),
@@ -47,6 +47,13 @@ int main(void)
         earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
     }
+
+
+    strings[0].type = EffectType::Earth;
+    strings[0].active_effect = earth_effects[0];
+    earth_effects[0]->setParameter(1, 1.0f);
+
+
 
 #if MIDI_USB_DE_LA_MORT
     MidiUsbHandler::Config midi_cfg;
@@ -84,6 +91,7 @@ int main(void)
             audio_diag.ResetPeaks();
 
 #if SerialMessagingGenial
+#if SerialPeaking
             hw.seed.PrintLine("callbacks/s: %lu (attendu ~%d)",
                               cb_per_s,
                               (int)(DaisyTdmSlave::kSampleRate
@@ -96,6 +104,16 @@ int main(void)
                 FLT_VAR3(peaks[4]), FLT_VAR3(peaks[5]), 
                 FLT_VAR3(peaks[6]), FLT_VAR3(peaks[7])
             );
+#endif
+#if CPU_METER
+            float avgLoad = loadMeter.GetAvgCpuLoad();
+            float maxLoad = loadMeter.GetMaxCpuLoad();
+
+
+            hw.seed.PrintLine("Charge CPU Moyenne : %d%% | Max : %d%%", 
+                        (int)(avgLoad * 100.0f), 
+                        (int)(maxLoad * 100.0f));
+#endif
 #endif
 
         }

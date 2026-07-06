@@ -17,6 +17,8 @@ CPP_SOURCES = 	src/main.cpp \
 LIBDAISY_DIR = lib/libDaisy
 DAISYSP_DIR = lib/DaisySP
 
+USE_DAISYSP_LGPL = 1
+
 CPP_STANDARD = -std=gnu++20
 
 C_INCLUDES += -Ilib/Q/q_lib/include \
@@ -25,7 +27,11 @@ C_INCLUDES += -Ilib/Q/q_lib/include \
 			  -Isrc
 
 
-OPT = -O3 -ffast-math
+OPT = -O3 \
+	-ffast-math \
+	-flto 
+
+APP_TYPE = BOOT_QSPI
 
 # Core location, and generic makefile.
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
