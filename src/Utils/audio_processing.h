@@ -99,6 +99,9 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
                 } else if (strings[j].active_effect != nullptr && strings[j].type != EffectType::Testation) {
                     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
+                    
+                    out_sample = out_arr[0][0];
+
                 } else {
                     out_sample = in_sample;
                 }
