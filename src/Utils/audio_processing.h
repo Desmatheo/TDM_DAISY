@@ -43,6 +43,12 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                           daisy::AudioHandle::OutputBuffer out,
                           size_t                           size)
 {
+
+#if CPU_METER
+    loadMeter.OnBlockStart();
+#endif
+
+
     audio_diag.callback_count++;
     bool signal_present = false;
 
@@ -90,6 +96,12 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
     }
 
     hw.seed.SetLed(signal_present);
+
+#if CPU_METER
+    loadMeter.OnBlockEnd();
+#endif
+
+
 }
 
 #endif // AUDIO_PROCESSING_H

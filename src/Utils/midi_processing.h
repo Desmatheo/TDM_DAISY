@@ -2,10 +2,12 @@
 // (midi, strings, hw, earth_effects, etc.)
 // Pas besoin de re-déclarer quoi que ce soit ici.
 #include "main.h" 
+#include "Utils.h"
 
 
 // static void OnControlChange(byte channel, byte control, byte value) {
 
+#if MIDI_USB_DE_LA_MORT
 static void MidiHandlingDeLaMort(){
     // Si des messages sont en attente, on allume la LED.
     if(midi.HasEvents()) {
@@ -105,3 +107,4 @@ static void MidiHandlingDeLaMort(){
         }
     }
 }
+#endif
