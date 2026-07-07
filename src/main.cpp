@@ -58,17 +58,17 @@ int main(void)
 
     // testpart
     for (int j = 0; j < 6; j++){ 
-        strings[j].type = EffectType::Testation;
+        strings[j].type = EffectType::Earth;
         strings[j].active_effect = earth_effects[j];
         earth_effects[j]->setParameter(0, 1.0f); // Mix 
         earth_effects[j]->setOctaveMode (2); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
-        earth_effects[j]->setParameter(5, 0.8f); // Volume
+        earth_effects[j]->setParameter(5, 1.0f); // Volume
 
-        strings[j].active_effect_bonus = delay_effects[j];
-        delay_effects[j]->setParameter(0, 1.0f); // Mix
-        delay_effects[j]->setParameter(1, 1.0f); // Time
-        delay_effects[j]->setParameter(2, 0.7f); // FeedBack
-        delay_effects[j]->setParameter(5, 1.0f); // Volume
+        // strings[j].active_effect_bonus = delay_effects[j];
+        // delay_effects[j]->setParameter(0, 1.0f); // Mix
+        // delay_effects[j]->setParameter(1, 1.0f); // Time
+        // delay_effects[j]->setParameter(2, 0.7f); // FeedBack
+        // delay_effects[j]->setParameter(5, 1.0f); // Volume
     }
 
 
