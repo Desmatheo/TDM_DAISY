@@ -86,7 +86,7 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
                 if (strings[j].type == EffectType::Testation){
                     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
-                    
+
                     float in_sample2 = out_arr[0][0];
                     float in_arr2[2][1] = {{in_sample2}, {in_sample2}};
                     const float* in_ptrs2[2] = {in_arr2[0], in_arr2[1]};
@@ -97,8 +97,8 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
                     out_sample = out_arr2[0][0];
 
-                // } else if (strings[j].active_effect != nullptr) {
-                //     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
+                } else if (strings[j].active_effect != nullptr && strings[j].type != EffectType::Testation) {
+                    strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
                 } else {
                     out_sample = in_sample;
                 }

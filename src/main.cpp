@@ -53,25 +53,24 @@ int main(void)
     for (int j = 0; j < 6; j++){ 
         earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
-
-        strings[j].type = EffectType::Testation;
-        strings[j].active_effect = earth_effects[j];
-        earth_effects[j]->setParameter(0, 1.0f);
-        earth_effects[j]->setParameter(1, 1.0f);
-        earth_effects[j]->setParameter(2, 1.0f);
-
-        strings[j].active_effect_bonus = delay_effects[j];
-        delay_effects[j]->setParameter(0, 1.0f);
-        delay_effects[j]->setParameter(1, 1.0f);
-        delay_effects[j]->setParameter(2, 0.7f);
-        delay_effects[j]->setParameter(3, 1.0f);
     }
 
-    // strings[0].type = EffectType::Earth;
-    // strings[0].active_effect = earth_effects[0];
-    // earth_effects[0]->setParameter(0, 1.0f);
-    // earth_effects[0]->setParameter(1, 1.0f);
-    // earth_effects[0]->setParameter(2, 1.0f);
+
+    // testpart
+    for (int j = 0; j < 6; j++){ 
+        strings[j].type = EffectType::Testation;
+        strings[j].active_effect = earth_effects[j];
+        earth_effects[j]->setParameter(0, 1.0f); // Mix 
+        earth_effects[j]->setOctaveMode (2); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
+        earth_effects[j]->setParameter(5, 0.8f); // Volume
+
+        strings[j].active_effect_bonus = delay_effects[j];
+        delay_effects[j]->setParameter(0, 1.0f); // Mix
+        delay_effects[j]->setParameter(1, 1.0f); // Time
+        delay_effects[j]->setParameter(2, 0.7f); // FeedBack
+        delay_effects[j]->setParameter(5, 1.0f); // Volume
+    }
+
 
 #if MIDI_USB_DE_LA_MORT
     MidiUsbHandler::Config midi_cfg;
