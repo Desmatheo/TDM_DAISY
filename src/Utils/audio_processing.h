@@ -6,6 +6,8 @@
 
 extern DaisyTdmSlave hw;
 
+extern CpuLoadMeter loadMeter;
+
 
 // ================================================================
 // Diagnostics shared between the audio callback (IRQ context) and the
@@ -79,14 +81,29 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 
                 float out_arr[2][1] = {{0.0f}, {0.0f}};
                 float* out_ptrs[2] = {out_arr[0], out_arr[1]};
+                float out_sample = 0.0f;
 
-                if (strings[j].active_effect != nullptr) {
+
+                if (strings[j].type == EffectType::Testation){
                     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
+                    
+                    float in_sample2 = out_arr[0][0];
+                    float in_arr2[2][1] = {{in_sample2}, {in_sample2}};
+                    const float* in_ptrs2[2] = {in_arr2[0], in_arr2[1]};
+
+                    float out_arr2[2][1] = {{0.0f}, {0.0f}};
+                    float* out_ptrs2[2] = {out_arr2[0], out_arr2[1]};
+                    strings[j].active_effect_bonus->update(in_ptrs2, out_ptrs2, 0);
+
+                    out_sample = out_arr2[0][0];
+
+                // } else if (strings[j].active_effect != nullptr) {
+                //     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
                 } else {
-                    out_arr[0][0] = in_sample;
+                    out_sample = in_sample;
                 }
 
-                out[j][i] = out_arr[0][0]; // * 0.1f; 
+                out[j][i] = out_sample; // * 0.1f; 
             }
         }
 
