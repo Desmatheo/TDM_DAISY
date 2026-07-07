@@ -7,77 +7,101 @@
 // static void OnControlChange(byte channel, byte control, byte value) {
 
 static void MidiHandlingDeLaMort(){
-    auto event = midi.PopEvent();
+    // Si des messages sont en attente, on allume la LED.
+    if(midi.HasEvents()) {
+        hw.seed.SetLed(true);
+    }
 
-    // 1. On s'assure que le message est bien un Control Change (CC)
-    if(event.type == ControlChange) {
+    // On boucle pour traiter tous les messages MIDI en attente, pas juste un seul.
+    while(midi.HasEvents()) {
+        auto event = midi.PopEvent();
+
+        // 1. On s'assure que le message est bien un Control Change (CC)
+        if(event.type != ControlChange) {
+            continue; // On ignore les autres types de messages
+        }
         
         // 2. On extrait les données de manière sécurisée avec l'API libDaisy
         ControlChangeEvent cc = event.AsControlChange();
-        const int control   = cc.control_number;
-        const float value   = cc.value / 127.0f;
+        const int channel      = event.channel;
+        const int control      = cc.control_number;
+        const float value_norm = cc.value / 127.0f;
 
-        // --- EFFETS ---
-        if (control >= 10 && control <= 45) {
-            int ccRelatif = control - 10;
-            int corde = ccRelatif / 6;
-            int potard = ccRelatif % 6;
-            if (corde >= 0 && corde < 6) {
+        // --- A. CONTRÔLES SPÉCIFIQUES À UNE CORDE (via le canal MIDI 0-5) ---
+        if (channel >= 0 && channel < 6) {
+            const int corde = channel;
+
+            // Paramètres d'effets (envoyés par les sliders)
+            // Delay (CC 10-15)
+            if (control >= 10 && control <= 15) {
+                int potard = control - 10;
                 strings[corde].type = EffectType::Delay;
                 strings[corde].active_effect = delay_effects[corde];
-                delay_effects[corde]->setParameter(potard, value);
+                delay_effects[corde]->setParameter(potard, value_norm);
             }
-        }
-        else if (control >= 50 && control <= 85) { 
-            int ccRelatif = control - 50;
-            int corde = ccRelatif / 6;
-            int potard = ccRelatif % 6;
-            if (corde >= 0 && corde < 6) {
+            // Distortion (CC 50-55)
+            else if (control >= 50 && control <= 55) { 
+                int potard = control - 50;
                 strings[corde].type = EffectType::Drive;
-                // strings[corde].active_effect = earth_effects[corde]; // Décommenter si branché
-                // earth_effects[corde]->setParameter(potard, value);
+                // strings[corde].active_effect = earth_effects[corde]; // ATTENTION: Probablement une erreur, devrait être drive_effects
+                // earth_effects[corde]->setParameter(potard, value_norm);
             }
-        }
-        else if (control >= 90 && control <= 125) {
-            int ccRelatif = control - 90;
-            int corde = ccRelatif / 6;
-            int potard = ccRelatif % 6;
-            if (corde >= 0 && corde < 6) {
+            // Earth (CC 90-95)
+            else if (control >= 90 && control <= 95) {
+                int potard = control - 90;
                 strings[corde].type = EffectType::Earth;
                 strings[corde].active_effect = earth_effects[corde];
-                earth_effects[corde]->setParameter(potard, value);
+                earth_effects[corde]->setParameter(potard, value_norm);
             }
         }
         
-        // --- MUTE PAR CORDE ---
-        else if (control >= 0 && control <= 5) {
-            // CORRECTION : control correspond directement à l'index de la corde (0 à 5)
+        // --- B. CONTRÔLES GLOBAUX (le canal est ignoré ou vaut 0) ---
+
+        // Mute par corde (CC 0-5)
+        if (control >= 0 && control <= 5) {
             int corde = control;
+            bool isMuted = (cc.value > 63); 
             
-            bool isBypassed = (cc.value > 63); 
-            
-            if (isBypassed) {
+            if (isMuted) {
                 strings[corde].type = EffectType::Bypass;
                 strings[corde].active_effect = nullptr;
             }
+            // NOTE: La logique pour réactiver l'effet ("un-mute") n'est pas présente.
         }
         
-        // --- BYPASS GLOBAL ---
+        // Bypass par effet (CC 48, 88, 89)
+        bool isBypassed = (cc.value > 63);
+        if (control == 48 || control == 88 || control == 89) {
+            EffectType typeToBypass;
+            if (control == 48) typeToBypass = EffectType::Delay;
+            else if (control == 88) typeToBypass = EffectType::Drive;
+            else typeToBypass = EffectType::Earth;
+
+            if (isBypassed) {
+                for (int i = 0; i < 6; i++) {
+                    if (strings[i].type == typeToBypass) {
+                        strings[i].type = EffectType::Bypass;
+                        strings[i].active_effect = nullptr;
+                    }
+                }
+            }
+            // NOTE: La logique pour sortir du bypass de l'effet n'est pas présente.
+        }
+        
+        // Bypass Global (CC 126)
         else if (control == 126) {
-            bool isBypassed = (cc.value > 63);
             if(isBypassed) {
                 for (int i = 0; i < 6; i++) {
                     strings[i].type = EffectType::Bypass;
                     strings[i].active_effect = nullptr;
                 }
             }
+            // NOTE: La logique pour sortir du bypass global n'est pas présente.
         }
         
-        // --- CHANGEMENT D'EFFET (CC 9 depuis Python) ---
+        // Changement d'effet (CC 9) - non utilisé
         else if (control == 9) {
-            // Tu as codé l'envoi d'un CC 9 dans changer_effet() en Python. 
-            // Tu peux récupérer l'index de l'effet ici si tu veux changer 
-            // le routage global ou préparer des buffers.
+            // Emplacement pour une future implémentation.
         }
     }
 }

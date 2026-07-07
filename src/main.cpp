@@ -65,13 +65,15 @@ int main(void)
 
 #if MIDI_USB_DE_LA_MORT
         midi.Listen();
-
-        if (midi.HasEvents()){
-            hw.seed.SetLed(true);
-            MidiHandlingDeLaMort();
-        }
+        // La fonction MidiHandlingDeLaMort s'occupe déjà de vérifier s'il y a des
+        // événements et d'allumer la LED. On l'appelle à chaque tour.
+        MidiHandlingDeLaMort();
 #endif
-        bool led = false;
+        // On éteint la LED à chaque tour de boucle.
+        // Si un message MIDI a été reçu, elle aura été allumée juste avant,
+        // créant un effet de clignotement pour le débogage.
+        hw.seed.SetLed(false);
+
         if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
         {
             last_status = System::GetNow();
