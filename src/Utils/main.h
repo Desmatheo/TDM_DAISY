@@ -13,7 +13,7 @@ extern MidiUsbHandler midi;
 #endif
 
 #if CPU_METER
-CpuLoadMeter loadMeter;
+extern CpuLoadMeter loadMeter;
 #endif
 
 extern DaisyTdmSlave hw;
@@ -27,7 +27,7 @@ enum class EffectType {
     Bypass,
     Earth,
     Delay,
-    Drive
+    Testation
 };
 
 class StringUtil{
@@ -35,11 +35,15 @@ public :
     EffectType type;
     int index;
     Effect* active_effect;
+    Effect* active_effect_bonus;
+    Effect* active_effect_bonus_bonus;
 
     StringUtil(EffectType type, int index){
         this->type = type;
         this->index = index;
         this->active_effect = nullptr;
+        this->active_effect_bonus = nullptr;
+        this->active_effect_bonus_bonus = nullptr;
     }
 
     EffectType GetType() {

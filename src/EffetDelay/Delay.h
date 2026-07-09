@@ -5,7 +5,7 @@
 #include "daisysp.h"
 #include "delayline_oct.h"
 
-#define MAX_DELAY 4096 // ~85 ms de délai maximum pour tenir dans la RAM de la Daisy
+#define MAX_DELAY 5000 // ~85 ms de délai maximum pour tenir dans la RAM de la Daisy
 
 class DelayEffect : public Effect {
 public:

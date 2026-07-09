@@ -89,7 +89,7 @@ void EarthEffect::update(const float** in, float** out, int idx) {
     // Application de l'overdrive si activé
 #if od_ON
     // Really cool sound when the low octave is overdriven, like epic sci fi blade runner
-    effect_output = overdrive.Process(effect_input * 0.25f) * (1.0f - (current_ODswell * current_ODswell * 2.8f - 0.1296f));
+    effect_output = overdrive.Process(effect_output * 0.25f) * (1.0f - (current_ODswell * current_ODswell * 2.8f - 0.1296f));
 #endif
 
     // Mixage final dry/wet pour cet effet de corde

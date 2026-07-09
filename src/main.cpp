@@ -6,13 +6,17 @@ using namespace daisy;
 MidiUsbHandler midi;
 #endif
 
+#if CPU_METER
+CpuLoadMeter loadMeter;
+#endif
+
 DaisyTdmSlave hw;
 
 EarthEffect* earth_effects[6];
 DelayEffect* delay_effects[6];
 
 StringUtil strings[] = {
-    StringUtil(EffectType::Earth, 0),
+    StringUtil(EffectType::Bypass, 0),
     StringUtil(EffectType::Bypass, 1),
     StringUtil(EffectType::Bypass, 2),
     StringUtil(EffectType::Bypass, 3),
@@ -36,6 +40,9 @@ int main(void)
 
 #if SerialMessagingGenial
     hw.seed.StartLog(false);
+#if CPU_METER
+    loadMeter.Init(DaisyTdmSlave::kSampleRate, DaisyTdmSlave::kBlockSize);
+#endif 
 #endif
 
     hw.StartAudio(AudioCallback);
@@ -49,10 +56,20 @@ int main(void)
     }
 
 
-    strings[0].type = EffectType::Earth;
-    strings[0].active_effect = earth_effects[0];
-    earth_effects[0]->setParameter(1, 1.0f);
+    // testpart
+    for (int j = 0; j < 6; j++){ 
+        strings[j].type = EffectType::Earth;
+        strings[j].active_effect = earth_effects[j];
+        earth_effects[j]->setParameter(0, 1.0f); // Mix 
+        earth_effects[j]->setOctaveMode (2); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
+        earth_effects[j]->setParameter(5, 1.0f); // Volume
 
+        // strings[j].active_effect_bonus = delay_effects[j];
+        // delay_effects[j]->setParameter(0, 1.0f); // Mix
+        // delay_effects[j]->setParameter(1, 1.0f); // Time
+        // delay_effects[j]->setParameter(2, 0.7f); // FeedBack
+        // delay_effects[j]->setParameter(5, 1.0f); // Volume
+    }
 
 
 #if MIDI_USB_DE_LA_MORT
@@ -111,15 +128,12 @@ int main(void)
             float avgLoad = loadMeter.GetAvgCpuLoad();
             float maxLoad = loadMeter.GetMaxCpuLoad();
 
-
             hw.seed.PrintLine("Charge CPU Moyenne : %d%% | Max : %d%%", 
                         (int)(avgLoad * 100.0f), 
                         (int)(maxLoad * 100.0f));
 #endif
 #endif
-
         }
-
         System::Delay(1);
     }
 }

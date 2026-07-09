@@ -10,7 +10,7 @@ class OctaveGenerator
 public:
     OctaveGenerator(float sample_rate)
     {
-        for (int i = 0; i < 40; ++i)
+        for (int i = 0; i < 60; ++i)
         {
             const auto center = centerFreq(i);
             const auto bw = bandwidth(i);
