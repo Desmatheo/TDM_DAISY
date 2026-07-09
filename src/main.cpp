@@ -45,6 +45,12 @@ int main(void)
 #endif 
 #endif
 
+#if MIDI_USB_DE_LA_MORT
+    MidiUsbHandler::Config midi_cfg;
+    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
+    midi.Init(midi_cfg);
+#endif
+
     hw.StartAudio(AudioCallback);
 
     memset(earth_mem, 0, 6 * sizeof(EarthEffect));
@@ -58,11 +64,11 @@ int main(void)
 
     // testpart
     for (int j = 0; j < 6; j++){ 
-        strings[j].type = EffectType::Earth;
-        strings[j].active_effect = earth_effects[j];
-        earth_effects[j]->setParameter(0, 1.0f); // Mix 
-        earth_effects[j]->setOctaveMode (2); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
-        earth_effects[j]->setParameter(5, 1.0f); // Volume
+        // strings[j].type = EffectType::Earth;
+        // strings[j].active_effect = earth_effects[j];
+        // earth_effects[j]->setParameter(0, 1.0f); // Mix 
+        // earth_effects[j]->setOctaveMode (1); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
+        // earth_effects[j]->setParameter(5, 1.0f); // Volume
 
         // strings[j].active_effect_bonus = delay_effects[j];
         // delay_effects[j]->setParameter(0, 1.0f); // Mix
@@ -71,12 +77,6 @@ int main(void)
         // delay_effects[j]->setParameter(5, 1.0f); // Volume
     }
 
-
-#if MIDI_USB_DE_LA_MORT
-    MidiUsbHandler::Config midi_cfg;
-    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
-    midi.Init(midi_cfg);
-#endif
 
     // With block 32 @ 48 kHz the callback should run 1500 times/s.
     // 0 calls/s means no BCLK/FS from the Teensy: check wiring and that
