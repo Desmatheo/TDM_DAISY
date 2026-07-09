@@ -10,7 +10,7 @@ class OctaveGenerator
 public:
     OctaveGenerator(float sample_rate)
     {
-        for (int i = 0; i < 60; ++i)
+        for (int i = 0; i < 40; ++i)
         {
             const auto center = centerFreq(i);
             const auto bw = bandwidth(i);
@@ -24,13 +24,54 @@ public:
         _down1 = 0;
         _down2 = 0;
 
-        for (auto& shifter : _shifters)
-        {
-            shifter.update(sample, type);
-            if (type == 1) _up1 += shifter.up1();
-            if (type == 2 || type == 3 ) _down1 += shifter.down1();
-            if (type == 3) _down2 += shifter.down2();
+        switch (type){
+            case 1:
+            for (auto& shifter : _shifters)
+            {
+                // shifter.update(sample, type);
+                shifter.update(sample, type);
+                shifter.update_up1();
+                _up1 += shifter.up1();
+            }
+            break;
+            case 2:
+            for (auto& shifter : _shifters)
+            {
+                // shifter.update(sample, type);
+                shifter.update(sample, type);
+                shifter.update_down1();
+                _down1 += shifter.down1();
+            }
+            break;
+            case 3:
+            for (auto& shifter : _shifters)
+            {
+                // shifter.update(sample, type);
+                shifter.update(sample, type);
+                shifter.update_up1();
+                shifter.update_down2();
+                _up1 += shifter.down2();
+            }
+            break;
         }
+
+        // for (auto& shifter : _shifters)
+        // {
+        //     // shifter.update(sample, type);
+        //     shifter.update_filter(sample, type);
+        //     if (type == 1) {
+        //         shifter.update_up1();
+        //         _up1 += shifter.up1();
+        //     }
+        //     if (type == 2 || type == 3 ){       
+        //         shifter.update_down1();     
+        //         _down1 += shifter.down1();
+        //     }
+        //     if (type == 3) {
+        //         shifter.update_down2();
+        //         _down2 += shifter.down2();
+        //     }
+        // }
     }
 
     float up1() const
