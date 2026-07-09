@@ -93,10 +93,6 @@ int main(void)
         // événements et d'allumer la LED. On l'appelle à chaque tour.
         MidiHandlingDeLaMort();
 #endif
-        // On éteint la LED à chaque tour de boucle.
-        // Si un message MIDI a été reçu, elle aura été allumée juste avant,
-        // créant un effet de clignotement pour le débogage.
-        hw.seed.SetLed(false);
 
         if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
         {
@@ -125,12 +121,37 @@ int main(void)
             );
 #endif
 #if CPU_METER
+            // Alerte Surcharge CPU : Transforme la LED de la carte en voyant d'alarme
+            float currentMaxLoad = loadMeter.GetMaxCpuLoad();
+            if(currentMaxLoad > 0.90f) {
+                hw.seed.SetLed(true); // Alerte Rouge : Le processeur sature !
+            } else {
+                hw.seed.SetLed(false); // Tout va bien
+            }
+
             float avgLoad = loadMeter.GetAvgCpuLoad();
             float maxLoad = loadMeter.GetMaxCpuLoad();
-
+#if MIDI_USB_DE_LA_MORT
+ 
+            // On envoie la charge CPU moyenne via MIDI (Control Change n°80)
+            // L'ordinateur la recevra sur le câble USB normal !
+            uint8_t cc_msg[3];
+            cc_msg[0] = 0xB0; // 0xB0 = Control Change sur le Canal 1
+            cc_msg[1] = 80;   // Numéro du contrôleur (CC 80)
+            cc_msg[2] = (uint8_t)(avgLoad * 100.0f); // Valeur de la charge (0 à 100%)
+            midi.SendMessage(cc_msg, 3);
+           
+            // On peut aussi envoyer la charge MAX sur le CC n°81
+            uint8_t cc_max[3];
+            cc_max[0] = 0xB0;
+            cc_max[1] = 81;
+            cc_max[2] = (uint8_t)(maxLoad * 100.0f);
+            midi.SendMessage(cc_max, 3);
+#else 
             hw.seed.PrintLine("Charge CPU Moyenne : %d%% | Max : %d%%", 
                         (int)(avgLoad * 100.0f), 
                         (int)(maxLoad * 100.0f));
+#endif
 #endif
 #endif
         }
