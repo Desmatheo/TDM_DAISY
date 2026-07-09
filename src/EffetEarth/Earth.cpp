@@ -17,13 +17,12 @@ using namespace daisysp;
 
 #endif
 
-#define eq_ON 0
-#define od_ON 0
-
 EarthEffect::EarthEffect(float sampleRate)
-    : octave(sampleRate / resample_factor),
-      eq1(-11, 140_Hz, sampleRate),
+    : octave(sampleRate / resample_factor)
+#if eq_ON
+      , eq1(-11, 140_Hz, sampleRate),
       eq2(5, 160_Hz, sampleRate)
+#endif
 {
     for (int j = 0; j < 6; ++j) {
         buff[j] = 0.0f;
@@ -49,7 +48,7 @@ void EarthEffect::update(const float** in, float** out, int idx) {
     buff[bin_counter] = inputL;
     
     if (bin_counter > 4) {
-        if (1) {
+        if (wetMix > 0.01f) {
             std::span<const float, resample_factor> in_chunk(&(buff[0]), resample_factor);
             const auto sample = decimate2(in_chunk); 
 

@@ -12,6 +12,9 @@ namespace q = cycfi::q;
 using namespace daisy;
 using namespace daisysp;
 
+#define eq_ON 0
+#define od_ON 0
+
 #include "Util/Multirate.h"
 #include "Util/OctaveGenerator.h"
 #include "../Utils/Effect.h"
@@ -30,9 +33,13 @@ class EarthEffect : public Effect {
     Interpolator interpolate;
     OctaveGenerator octave;
 #if USE_DAISY
+#if eq_ON
     q::highshelf eq1;
     q::lowshelf eq2;
+#endif
+#if od_ON
     Overdrive overdrive;
+#endif
 #endif
     float buff[6];
     float buff_out[6];

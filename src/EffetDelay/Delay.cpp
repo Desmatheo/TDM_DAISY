@@ -38,7 +38,6 @@ float DelayEffect::DelayChannel::Process(float in) {
 
 DelayEffect::DelayEffect(float sampleRate) {
     delayL.Init(&delayLineOctLeft, sampleRate);
-    delayR.Init(&delayLineOctRight, sampleRate);
 
     setMix(0.75f);
     setDelayTime(0.25f);
@@ -81,25 +80,20 @@ void DelayEffect::setDelayTime(float time) {
 
     const bool isActive = (vdelayTime > 0.01f);
     delayL.active = isActive;
-    delayR.active = isActive;
 
     const float min_delay = 2400.0f;
     const float max_delay = static_cast<float>(MAX_DELAY);
     const float target = min_delay + (max_delay - min_delay) * vdelayTime;
 
     delayL.delayTarget = target;
-    delayR.delayTarget = target;
     delayL.currentDelay = target;
-    delayR.currentDelay = target;
     delayL.del->SetDelay(target);
-    delayR.del->SetDelay(target);
 }
 
 void DelayEffect::setFeedback(float fdbk) {
     vdelayFDBK = clampf(fdbk, 0.0f, 0.99f);
 
     delayL.feedback = vdelayFDBK;
-    delayR.feedback = vdelayFDBK;
 }
 
 

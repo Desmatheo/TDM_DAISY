@@ -27,6 +27,9 @@ struct AudioDiagnostics
 
 static AudioDiagnostics audio_diag;
 
+// Etat de l'enveloppe pour chaque corde (Noise Gate)
+static float string_env[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
 // ================================================================
 // Audio callback -- runs at 48 kHz / blocksize (1500 Hz for block 32),
 // clocked by the Teensy TDM master.
@@ -74,6 +77,21 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
             }
             else {
                 float in_sample = in[j][i];
+                
+                // --- NOISE GATE SIMPLE ---
+                float abs_in = fabsf(in_sample);
+                if (abs_in > string_env[j]) {
+                    string_env[j] = abs_in; // Attaque instantanée
+                } else {
+                    string_env[j] *= 0.999f; // Relâchement en douceur
+                }
+
+                // Application du gate : si le volume est sous le seuil de diaphonie
+                if (string_env[j] < 0.001f) {
+                    in_sample = 0.0f; // On coupe le son avant qu'il ne rentre dans l'effet
+                }
+                // -------------------------
+
                 float in_arr[2][1] = {{in_sample}, {in_sample}};
                 const float* in_ptrs[2] = {in_arr[0], in_arr[1]};
                 

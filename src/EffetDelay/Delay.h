@@ -43,8 +43,8 @@ public:
     void setParameter(int param_id, float value) override;
 
 private:
-    DelayChannel delayL, delayR; // On en utilisera qu'un seul (L) pour l'effet mono
-    daisysp::DelayLineOct<float, MAX_DELAY> delayLineOctLeft, delayLineOctRight;
+    DelayChannel delayL; // On en utilisera qu'un seul (L) pour l'effet mono
+    daisysp::DelayLineOct<float, MAX_DELAY> delayLineOctLeft;
 
     float dryMix, wetMix, volume;
     float vdelayTime, vdelayFDBK; // Pour garder la valeur des potards
