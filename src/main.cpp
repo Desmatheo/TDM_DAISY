@@ -45,7 +45,11 @@ int main(void)
 #endif 
 #endif
 
-    hw.StartAudio(AudioCallback);
+#if USE_MIDI_USB
+    MidiUsbHandler::Config midi_cfg;
+    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
+    midi.Init(midi_cfg);
+#endif
 
     memset(earth_mem, 0, 6 * sizeof(EarthEffect));
     memset(delay_mem, 0, 6 * sizeof(DelayEffect));
@@ -55,20 +59,27 @@ int main(void)
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
     }
 
+    // testpart
+    for (int j = 0; j < 6; j++){ 
+        // strings[j].type = EffectType::Earth;
+        // strings[j].active_effect = earth_effects[j];
+        // earth_effects[j]->setParameter(0, 1.0f); // Mix 
+        // earth_effects[j]->setOctaveMode (1); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
+        // earth_effects[j]->setParameter(5, 1.0f); // Volume
 
-
-
-#if USE_MIDI_USB
-    MidiUsbHandler::Config midi_cfg;
-    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
-    midi.Init(midi_cfg);
-#endif
-
+        // strings[j].active_effect_bonus = delay_effects[j];
+        // delay_effects[j]->setParameter(0, 1.0f); // Mix
+        // delay_effects[j]->setParameter(1, 1.0f); // Time
+        // delay_effects[j]->setParameter(2, 0.7f); // FeedBack
+        // delay_effects[j]->setParameter(5, 1.0f); // Volume
+    }
     // With block 32 @ 48 kHz the callback should run 1500 times/s.
     // 0 calls/s means no BCLK/FS from the Teensy: check wiring and that
     // the Teensy sketch is running. ~1378/s means the Teensy was left at
     // its default 44.1 kHz (AUDIO_SAMPLE_RATE_EXACT not overridden).
     uint32_t last_status = System::GetNow();
+
+    hw.StartAudio(AudioCallback);
 
     while(1)
     {

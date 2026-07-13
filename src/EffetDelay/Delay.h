@@ -4,6 +4,7 @@
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "delayline_oct.h"
+#include "../Utils/Utils.h"
 
 #define MAX_DELAY 5000 // ~85 ms de délai maximum pour tenir dans la RAM de la Daisy
 

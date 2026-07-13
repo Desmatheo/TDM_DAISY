@@ -106,7 +106,7 @@ void EarthEffect::setMix(float mix) {
 
 void EarthEffect::setVolume(float vol)
 {
-    volume = (vol < 0.0f) ? 0.0f : (vol > 1.0f) ? 1.0f : vol; 
+    volume = clampf(vol, 0.0f, 1.0f);
 }
 
 void EarthEffect::setOctaveMode(int mode) {

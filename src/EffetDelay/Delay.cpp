@@ -53,16 +53,9 @@ void DelayEffect::update(const float** in, float** out, int idx) {
     float delay_outL = delayL.Process(inputL);
 
     // Mixage simple et plus audible : le signal traité est ajouté au signal sec.
-    const float wet = delay_outL * wetMix * volume;
-    out[0][idx] = inputL + wet;
+    const float wet = delay_outL * wetMix;
+    out[0][idx] = (inputL + wet) * volume;
     out[1][idx] = out[0][idx];
-}
-
-static inline float clampf(float v, float lo, float hi)
-{
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
 }
 
 void DelayEffect::setMix(float mix) {

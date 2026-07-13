@@ -52,7 +52,6 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
 
     audio_diag.callback_count++;
-    bool signal_present = false;
 
     for(size_t i = 0; i < size; i++)
     {
@@ -101,7 +100,14 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                     out_sample = in_sample;
                 }
 
-                out[j][i] = out_sample; // * 0.1f; 
+                // test de mise a niveau de volume selon les cordes : 
+                float postamp = 2.0f;
+                switch (j) {
+                    case 0: out[j][i] = out_sample * 0.5f * postamp; break;
+                    case 1: out[j][i] = out_sample * 1.0f * postamp; break;
+                    case 2: out[j][i] = out_sample * 1.5f * postamp; break;
+                    default : out[j][i] = out_sample * 0.3f * postamp; break;
+                }
             }
         }
 
@@ -109,8 +115,6 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
         out[7][i] = 0.0f;
         
     }
-
-    hw.seed.SetLed(signal_present);
 
 #if CPU_METER
     loadMeter.OnBlockEnd();

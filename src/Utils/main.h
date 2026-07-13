@@ -27,6 +27,7 @@ enum class EffectType {
     Bypass,
     Earth,
     Delay,
+    Drive,
     Testation
 };
 
