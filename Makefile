@@ -8,9 +8,11 @@ TARGET = daisy_tdm_hexa
 CPP_SOURCES = 	src/main.cpp \
              	$(wildcard src/EffetEarth/Earth.cpp) \
              	$(wildcard src/EffetDelay/Delay.cpp) \
+              	$(wildcard src/EffetDisto/Disto.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/delays/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/filters/*.cpp) \
+              	$(wildcard src/EffetDisto/toneDaisySP/*.cpp) \
 
 
 # Library Locations
