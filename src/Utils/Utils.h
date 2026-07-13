@@ -1,5 +1,7 @@
 #pragma once 
 
+#define USE_DAISY 1
+
 // /!\ Attention, si on utilise le MIDI, l'usb servira qu'a ça. Faudra un adaptateur si on veut faire du seriamessaginggneial
 #define SerialMessagingGenial 1
 
