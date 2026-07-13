@@ -58,13 +58,6 @@ void DelayEffect::update(const float** in, float** out, int idx) {
     out[1][idx] = out[0][idx];
 }
 
-static inline float clampf(float v, float lo, float hi)
-{
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-}
-
 void DelayEffect::setMix(float mix) {
     wetMix = clampf(mix, 0.0f, 1.0f);
     dryMix = 1.0f - wetMix;

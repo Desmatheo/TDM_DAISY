@@ -1,6 +1,7 @@
 #pragma once
 
 #define USE_DAISY 1
+#include "../Utils/Utils.h"
 
 #if USE_DAISY
 #include "daisy_seed.h"
