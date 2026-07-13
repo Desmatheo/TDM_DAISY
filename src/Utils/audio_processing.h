@@ -55,22 +55,9 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
 
     audio_diag.callback_count++;
-    bool signal_present = false;
 
     for(size_t i = 0; i < size; i++)
     {
-        //ancienne partie du code de Yannick
-        // for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
-        // {
-        //     const float mag = fabsf(in[ch][i]);
-        //     if(mag > audio_diag.in_peak[ch])
-        //         audio_diag.in_peak[ch] = mag;
-        //     if(mag > 0.05f)
-        //         signal_present = true;
-        // }
-
-
-
         //nouvelle partie DSP etc...
         for (size_t j = 0; j < 6; j++) 
         {
@@ -124,7 +111,17 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                     out_sample = in_sample;
                 }
 
-                out[j][i] = out_sample; // * 0.1f; 
+                // test de mise a niveau de volume selon les cordes : 
+                float postamp = 2.0f;
+                if (j == 0){
+                    out[j][i] = out_sample * 0.5f * postamp; // * 0.1f; 
+                }
+                else if (j < 3 && j != 1) {
+                    out[j][i] = out_sample * 1.5f * postamp; // * 0.1f; 
+                }
+                else {
+                    out[j][i] = out_sample * 0.3f * postamp; // * 0.1f; 
+                }
             }
         }
 
@@ -132,8 +129,6 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
         out[7][i] = 0.0f;
         
     }
-
-    hw.seed.SetLed(signal_present);
 
 #if CPU_METER
     loadMeter.OnBlockEnd();
