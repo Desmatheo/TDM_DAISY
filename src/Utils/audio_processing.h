@@ -113,14 +113,11 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
 
                 // test de mise a niveau de volume selon les cordes : 
                 float postamp = 2.0f;
-                if (j == 0){
-                    out[j][i] = out_sample * 0.5f * postamp; // * 0.1f; 
-                }
-                else if (j < 3 && j != 1) {
-                    out[j][i] = out_sample * 1.5f * postamp; // * 0.1f; 
-                }
-                else {
-                    out[j][i] = out_sample * 0.3f * postamp; // * 0.1f; 
+                switch (j) {
+                    case 0: out[j][i] = out_sample * 0.5f * postamp; break;
+                    case 1: out[j][i] = out_sample * 1.0f * postamp; break;
+                    case 2: out[j][i] = out_sample * 1.5f * postamp; break;
+                    default : out[j][i] = out_sample * 0.3f * postamp; break;
                 }
             }
         }
