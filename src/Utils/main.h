@@ -8,7 +8,7 @@
 #include "../EffetDelay/Delay.h"
 
 
-#if MIDI_USB_DE_LA_MORT
+#if USE_MIDI_USB
 extern MidiUsbHandler midi;
 #endif
 

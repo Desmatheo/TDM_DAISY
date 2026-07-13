@@ -2,7 +2,7 @@
 
 using namespace daisy; 
 
-#if MIDI_USB_DE_LA_MORT
+#if USE_MIDI_USB
 MidiUsbHandler midi;
 #endif
 
@@ -38,7 +38,7 @@ int main(void)
     // Non-blocking USB serial: the board keeps running even if no
     // serial monitor is connected.
 
-#if SerialMessagingGenial
+#if ENABLE_SERIAL_LOGGING
     hw.seed.StartLog(false);
 #if CPU_METER
     loadMeter.Init(DaisyTdmSlave::kSampleRate, DaisyTdmSlave::kBlockSize);
@@ -56,23 +56,9 @@ int main(void)
     }
 
 
-    // testpart
-    for (int j = 0; j < 6; j++){ 
-        strings[j].type = EffectType::Earth;
-        strings[j].active_effect = earth_effects[j];
-        earth_effects[j]->setParameter(0, 1.0f); // Mix 
-        earth_effects[j]->setOctaveMode (2); // Octave Mode (1 up, 0.5 down ou 0.0 down2)
-        earth_effects[j]->setParameter(5, 1.0f); // Volume
-
-        // strings[j].active_effect_bonus = delay_effects[j];
-        // delay_effects[j]->setParameter(0, 1.0f); // Mix
-        // delay_effects[j]->setParameter(1, 1.0f); // Time
-        // delay_effects[j]->setParameter(2, 0.7f); // FeedBack
-        // delay_effects[j]->setParameter(5, 1.0f); // Volume
-    }
 
 
-#if MIDI_USB_DE_LA_MORT
+#if USE_MIDI_USB
     MidiUsbHandler::Config midi_cfg;
     midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
     midi.Init(midi_cfg);
@@ -87,11 +73,11 @@ int main(void)
     while(1)
     {
 
-#if MIDI_USB_DE_LA_MORT
+#if USE_MIDI_USB
         midi.Listen();
-        // La fonction MidiHandlingDeLaMort s'occupe déjà de vérifier s'il y a des
-        // événements et d'allumer la LED. On l'appelle à chaque tour.
-        MidiHandlingDeLaMort();
+        // HandleMidiMessages s'occupe de vérifier s'il y a des événements
+        // et d'allumer la LED. On l'appelle à chaque tour.
+        HandleMidiMessages();
 #endif
 
         if(System::GetNow() - last_status >= STATUS_PERIOD_MS)
@@ -100,12 +86,13 @@ int main(void)
 
             const uint32_t cb_per_s = audio_diag.callback_count;
             audio_diag.callback_count = 0;
+            (void)cb_per_s;
             float peaks[DaisyTdmSlave::kNumInputs];
             for(size_t ch = 0; ch < DaisyTdmSlave::kNumInputs; ch++)
                 peaks[ch] = audio_diag.in_peak[ch];
             audio_diag.ResetPeaks();
 
-#if SerialMessagingGenial
+#if ENABLE_SERIAL_LOGGING
 #if SerialPeaking
             hw.seed.PrintLine("callbacks/s: %lu (attendu ~%d)",
                               cb_per_s,
@@ -131,7 +118,7 @@ int main(void)
 
             float avgLoad = loadMeter.GetAvgCpuLoad();
             float maxLoad = loadMeter.GetMaxCpuLoad();
-#if MIDI_USB_DE_LA_MORT
+#if USE_MIDI_USB
  
             // On envoie la charge CPU moyenne via MIDI (Control Change n°80)
             // L'ordinateur la recevra sur le câble USB normal !

@@ -7,8 +7,8 @@
 
 // static void OnControlChange(byte channel, byte control, byte value) {
 
-#if MIDI_USB_DE_LA_MORT
-static void MidiHandlingDeLaMort(){
+#if USE_MIDI_USB
+static void HandleMidiMessages(){
     // Si des messages sont en attente, on allume la LED.
     if(midi.HasEvents()) {
         hw.seed.SetLed(true);
@@ -43,8 +43,8 @@ static void MidiHandlingDeLaMort(){
             }
             // Distortion (CC 50-55)
             else if (control >= 50 && control <= 55) { 
-                int potard = control - 50;
-                strings[corde].type = EffectType::Drive;
+                // int potard = control - 50;
+                // strings[corde].type = EffectType::Drive;
                 // strings[corde].active_effect = earth_effects[corde]; // ATTENTION: Probablement une erreur, devrait être drive_effects
                 // earth_effects[corde]->setParameter(potard, value_norm);
             }
@@ -76,7 +76,7 @@ static void MidiHandlingDeLaMort(){
         if (control == 48 || control == 88 || control == 89) {
             EffectType typeToBypass;
             if (control == 48) typeToBypass = EffectType::Delay;
-            else if (control == 88) typeToBypass = EffectType::Drive;
+            // else if (control == 88) typeToBypass = EffectType::Drive;
             else typeToBypass = EffectType::Earth;
 
             if (isBypassed) {

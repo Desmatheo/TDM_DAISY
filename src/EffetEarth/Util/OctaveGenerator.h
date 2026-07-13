@@ -48,9 +48,10 @@ public:
             {
                 // shifter.update(sample, type);
                 shifter.update(sample, type);
-                shifter.update_up1();
+                shifter.update_down1();
+                _down1 += shifter.down1();
                 shifter.update_down2();
-                _up1 += shifter.down2();
+                _down2 += shifter.down2();
             }
             break;
         }
