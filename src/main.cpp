@@ -51,8 +51,6 @@ int main(void)
     midi.Init(midi_cfg);
 #endif
 
-    hw.StartAudio(AudioCallback);
-
     memset(earth_mem, 0, 6 * sizeof(EarthEffect));
     memset(delay_mem, 0, 6 * sizeof(DelayEffect));
 
@@ -60,7 +58,6 @@ int main(void)
         earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
     }
-
 
     // testpart
     for (int j = 0; j < 6; j++){ 
@@ -83,6 +80,8 @@ int main(void)
     // the Teensy sketch is running. ~1378/s means the Teensy was left at
     // its default 44.1 kHz (AUDIO_SAMPLE_RATE_EXACT not overridden).
     uint32_t last_status = System::GetNow();
+
+    hw.StartAudio(AudioCallback);
 
     while(1)
     {
