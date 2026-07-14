@@ -290,7 +290,10 @@ void DistoEffect::setParameter(int param_id, float value) {
         case 0 : 
             setMix(value);
             break;
-        case 1 :  
+        case 1 : 
+            setGain(value);
+            break;
+        case 2 :  
             if (value >= 0.82f) setDistoMode(0);
             else if ((0.82f > value) && (value > 0.66f)) setDistoMode(1);
             else if ((0.66f > value) && (value > 0.49f)) setDistoMode(2);
@@ -298,20 +301,17 @@ void DistoEffect::setParameter(int param_id, float value) {
             else if ((0.33f > value) && (value > 0.16f)) setDistoMode(4);
             else setDistoMode(5);
             break; 
-        case 2 : 
+        case 3 : 
             setTone(value);
             break;
-        case 3 : 
-            setVolume(value);
-            break;
         case 4 : 
-            setGain(value);
-            break;
-        case 5 : 
             setIntensity(value);
             break;
-        case 6 : 
+        case 5 : 
             setOversamp(value);
+            break;
+        case 6 : 
+            setVolume(value);
             break;
         default:
 #if !USE_DAISY
