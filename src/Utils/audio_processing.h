@@ -65,11 +65,6 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 float in_sample = in[j][i];
                 float abs_in = fabsf(in_sample);
                 
-                // LED diagnostic
-                if (abs_in > 0.001f) {
-                    signal_present = true;
-                }
-                
                 float in_arr[2][1] = {{in_sample}, {in_sample}};
                 const float* in_ptrs[2] = {in_arr[0], in_arr[1]};
                 

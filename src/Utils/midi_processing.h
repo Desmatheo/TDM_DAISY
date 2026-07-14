@@ -43,17 +43,17 @@ static void HandleMidiMessages(){
             }
             // Distortion (CC 50-55)
             else if (control >= 50 && control <= 55) { 
-                // int potard = control - 50;
-                // strings[corde].type = EffectType::Drive;
-                // strings[corde].active_effect = earth_effects[corde]; // ATTENTION: Probablement une erreur, devrait être drive_effects
-                // earth_effects[corde]->setParameter(potard, value_norm);
+                int potard = control - 50;
+                strings[corde].type = EffectType::Disto;
+                strings[corde].active_effect = disto_effects[corde]; 
+                disto_effects[corde]->setParameter(potard, value_norm);
             }
             // Earth (CC 90-95)
             else if (control >= 90 && control <= 95) {
                 int potard = control - 90;
                 strings[corde].type = EffectType::Earth;
                 strings[corde].active_effect = earth_effects[corde];
-                earth_effects[corde]->setParameter(potard, value_norm);
+                earth_effectss[corde]->setParameter(potard, value_norm);
             }
         }
         

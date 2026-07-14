@@ -16,11 +16,11 @@ https://opensource.org/license/lgpl-2-1/
 namespace daisysp
 {
 /** A first-order recursive low-pass filter with variable frequency response. */
-class Tone
+class Tone2
 {
   public:
-    Tone() {}
-    ~Tone() {}
+    Tone2() {}
+    ~Tone2() {}
     /** Initializes the Tone module.
         sample_rate - The sample rate of the audio engine being run. 
     */

@@ -13,7 +13,7 @@ using namespace daisy;
 using namespace daisysp;
 
 #include "../Utils/Effect.h"
-#include "toneDaisySP/tone.h"
+#include "../Utils/toneDaisySP/tone.h"
 
 #if USE_DAISY
 class DistoEffect : public Effect {
@@ -37,7 +37,7 @@ class DistoEffect : public Effect {
 
     int effect_mode = 0;
 
-    Tone tone;
+    Tone2 tone;
 
 #if USE_DAISY
     DistoEffect(float sampleRate); 
