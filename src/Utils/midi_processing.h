@@ -53,7 +53,7 @@ static void HandleMidiMessages(){
                 int potard = control - 90;
                 strings[corde].type = EffectType::Earth;
                 strings[corde].active_effect = earth_effects[corde];
-                earth_effectss[corde]->setParameter(potard, value_norm);
+                earth_effects[corde]->setParameter(potard, value_norm);
             }
         }
         
