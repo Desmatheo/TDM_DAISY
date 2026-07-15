@@ -14,6 +14,7 @@ DaisyTdmSlave hw;
 
 EarthEffect* earth_effects[6];
 DelayEffect* delay_effects[6];
+TremoloEffect* tremolo_effects[6];
 DistoEffect* disto_effects[6];
 
 StringUtil strings[] = {
@@ -28,6 +29,7 @@ StringUtil strings[] = {
 // ================================================================
 alignas(EarthEffect) static uint8_t earth_mem[6 * sizeof(EarthEffect)];
 alignas(DelayEffect) static uint8_t delay_mem[6 * sizeof(DelayEffect)];
+alignas(TremoloEffect) static uint8_t tremolo_mem[6 * sizeof(TremoloEffect)];
 alignas(DistoEffect) static uint8_t disto_mem[6 * sizeof(DistoEffect)];
 
 #define STATUS_PERIOD_MS 1000
@@ -55,11 +57,13 @@ int main(void)
 
     memset(earth_mem, 0, 6 * sizeof(EarthEffect));
     memset(delay_mem, 0, 6 * sizeof(DelayEffect));
+    memset(tremolo_mem, 0, 6 * sizeof(TremoloEffect));
     memset(disto_mem, 0, 6 * sizeof(DistoEffect));
 
     for (int j = 0; j < 6; j++){ 
         earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
+        tremolo_effects[j] = new(&tremolo_mem[j * sizeof(TremoloEffect)]) TremoloEffect((float)DaisyTdmSlave::kSampleRate);
         disto_effects[j] = new(&disto_mem[j * sizeof(DistoEffect)]) DistoEffect((float)DaisyTdmSlave::kSampleRate);
     }
 

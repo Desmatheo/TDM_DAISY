@@ -115,7 +115,11 @@ public:
         const auto b = _y.imag();
         const auto b_sign = (b < 0) ? -1.0f : 1.0f;
 
-        const auto x = 0.5f * a * fastInvSqrt(a*a + b*b);
+        const auto mag_sq = a*a + b*b;
+        // Soft-clamp qui supprime parfaitement les grésillements
+        const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
+
+        const auto x = 0.5f * a * fastInvSqrt(safe_mag);
         const auto c = fastSqrt(0.5f + x);
         const auto d = b_sign * fastSqrt(0.5f - x);
 
@@ -135,7 +139,10 @@ public:
         const auto b = _down1.imag();
         const auto b_sign = (b < 0) ? -1.0f : 1.0f;
 
-        const auto x = 0.5f * a * fastInvSqrt(a*a + b*b);
+        const auto mag_sq = a*a + b*b;
+        const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
+
+        const auto x = 0.5f * a * fastInvSqrt(safe_mag);
         const auto c = fastSqrt(0.5f + x);
         const auto d = b_sign * fastSqrt(0.5f - x);
 

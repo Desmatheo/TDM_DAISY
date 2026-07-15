@@ -6,6 +6,7 @@
 #include "Effect.h"
 #include "../EffetEarth/Earth.h"
 #include "../EffetDelay/Delay.h"
+#include "../EffetTremolo/Tremolo.h"
 #include "../EffetDisto/Disto.h"
 
 
@@ -22,6 +23,7 @@ extern DaisyTdmSlave hw;
 
 extern EarthEffect* earth_effects[6];
 extern DelayEffect* delay_effects[6];
+extern TremoloEffect* tremolo_effects[6];
 extern DistoEffect* disto_effects[6];
 enum class EffectType {
     Mute,
@@ -29,7 +31,8 @@ enum class EffectType {
     Earth,
     Delay,
     Disto,
-    Testation
+    Testation,
+    Tremolo
 };
 
 class StringUtil{

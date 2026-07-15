@@ -69,12 +69,12 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 #endif
             }
         } 
-        else {
-            // Optimisation CPU : on ne calcule pas l'octaver s'il est coupé
-            for (size_t j = 0; j < 6; ++j) {
-                buff_out[j] = 0.0f;
-            }
-        }
+        // else {
+        //     // Optimisation CPU : on ne calcule pas l'octaver s'il est coupé
+        //     for (size_t j = 0; j < 6; ++j) {
+        //         buff_out[j] = 0.0f;
+        //     }
+        // }
     }
 
     // Avance le compteur de temps (0 à 5)

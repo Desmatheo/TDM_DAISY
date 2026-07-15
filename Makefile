@@ -9,6 +9,7 @@ CPP_SOURCES = 	src/main.cpp \
              	$(wildcard src/EffetEarth/Earth.cpp) \
              	$(wildcard src/EffetDelay/Delay.cpp) \
               	$(wildcard src/EffetDisto/Disto.cpp) \
+              	$(wildcard src/EffetTremolo/Tremolo.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/delays/*.cpp) \
               	$(wildcard src/EffetEarth/Dattorro/dsp/filters/*.cpp) \

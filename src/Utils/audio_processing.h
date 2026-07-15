@@ -65,6 +65,7 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 float in_sample = in[j][i];
                 float abs_in = fabsf(in_sample);
                 
+
                 float in_arr[2][1] = {{in_sample}, {in_sample}};
                 const float* in_ptrs[2] = {in_arr[0], in_arr[1]};
                 
@@ -95,14 +96,7 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                     out_sample = in_sample;
                 }
 
-                // test de mise a niveau de volume selon les cordes : 
-                float postamp = 2.0f;
-                switch (j) {
-                    case 0: out[j][i] = out_sample * 0.5f * postamp; break;
-                    case 1: out[j][i] = out_sample * 1.0f * postamp; break;
-                    case 2: out[j][i] = out_sample * 1.5f * postamp; break;
-                    default : out[j][i] = out_sample * 0.3f * postamp; break;
-                }
+                out[j][i] = out_sample;
             }
         }
 

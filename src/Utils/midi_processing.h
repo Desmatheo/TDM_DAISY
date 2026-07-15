@@ -55,6 +55,13 @@ static void HandleMidiMessages(){
                 strings[corde].active_effect = earth_effects[corde];
                 earth_effects[corde]->setParameter(potard, value_norm);
             }
+            // Tremolo (CC 110-115)
+            else if (control >= 110 && control <= 115) {
+                int potard = control - 110;
+                strings[corde].type = EffectType::Tremolo;
+                strings[corde].active_effect = tremolo_effects[corde];
+                tremolo_effects[corde]->setParameter(potard, value_norm);
+            }
         }
         
         // --- B. CONTRÔLES GLOBAUX (le canal est ignoré ou vaut 0) ---
@@ -71,21 +78,34 @@ static void HandleMidiMessages(){
             // NOTE: La logique pour réactiver l'effet ("un-mute") n'est pas présente.
         }
         
-        // Bypass par effet (CC 48, 88, 89)
+        // Bypass par effet (CC 48, 88, 89, 118)
         bool isBypassed = (cc.value > 63);
-        if (control == 48 || control == 88 || control == 89) {
-            EffectType typeToBypass;
-            if (control == 48) typeToBypass = EffectType::Delay;
-            // else if (control == 88) typeToBypass = EffectType::Drive;
-            else typeToBypass = EffectType::Earth;
+        if (control == 48 || control == 88 || control == 89 || control == 118) {
+            const int corde= channel;
 
             if (isBypassed) {
-                for (int i = 0; i < 6; i++) {
-                    if (strings[i].type == typeToBypass) {
-                        strings[i].type = EffectType::Bypass;
-                        strings[i].active_effect = nullptr;
-                    }
+                strings[corde].type = EffectType::Bypass;
+                strings[corde].active_effect = nullptr;
+            }
+            else {
+                EffectType typeToBypass;
+                if (control == 48) {
+                    strings[corde].type = EffectType::Delay;
+                    strings[corde].active_effect = delay_effects[corde];
                 }
+                else if (control == 88) {
+                    strings[corde].type = EffectType::Disto;
+                    strings[corde].active_effect = disto_effects[corde];
+                }
+                else if (control == 89) {
+                    strings[corde].type = EffectType::Earth;
+                    strings[corde].active_effect = earth_effects[corde];
+                }
+                else if (control == 118) {
+                    strings[corde].type = EffectType::Tremolo;
+                    strings[corde].active_effect = tremolo_effects[corde];
+                }       
+
             }
             // NOTE: La logique pour sortir du bypass de l'effet n'est pas présente.
         }
