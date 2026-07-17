@@ -35,21 +35,21 @@ static void HandleMidiMessages(){
 
             // Paramètres d'effets (envoyés par les sliders)
             // Delay (CC 10-15)
-            if (control >= 10 && control <= 15) {
+            if (control >= 10 && control <= 16) {
                 int potard = control - 10;
                 strings[corde].type = EffectType::Delay;
                 strings[corde].active_effect = delay_effects[corde];
                 delay_effects[corde]->setParameter(potard, value_norm);
             }
-            // Distortion (CC 50-55)
-            else if (control >= 50 && control <= 55) { 
+            // Distortion (CC 50-56)
+            else if (control >= 50 && control <= 56) { 
                 int potard = control - 50;
                 strings[corde].type = EffectType::Disto;
                 strings[corde].active_effect = disto_effects[corde]; 
                 disto_effects[corde]->setParameter(potard, value_norm);
             }
             // Earth (CC 90-95)
-            else if (control >= 90 && control <= 95) {
+            else if (control >= 90 && control <= 96) {
                 int potard = control - 90;
                 strings[corde].type = EffectType::Earth;
                 strings[corde].active_effect = earth_effects[corde];
@@ -74,21 +74,36 @@ static void HandleMidiMessages(){
         // Bypass par effet (CC 48, 88, 89)
         bool isBypassed = (cc.value > 63);
         if (control == 48 || control == 88 || control == 89) {
-            EffectType typeToBypass;
-            if (control == 48) typeToBypass = EffectType::Delay;
-            // else if (control == 88) typeToBypass = EffectType::Drive;
-            else typeToBypass = EffectType::Earth;
+            const int corde = channel;
 
             if (isBypassed) {
-                for (int i = 0; i < 6; i++) {
-                    if (strings[i].type == typeToBypass) {
-                        strings[i].type = EffectType::Bypass;
-                        strings[i].active_effect = nullptr;
-                    }
+                strings[corde].type = EffectType::Bypass;
+                strings[corde].active_effect = nullptr;
+            }
+            else {
+                EffectType typeToBypass;
+                if (control == 48){
+                    strings[corde].type = EffectType::Delay;
+                    strings[corde].active_effect = delay_effects[corde];
+                }
+                else if (control == 88){
+                    strings[corde].type = EffectType::Disto;
+                    strings[corde].active_effect = disto_effects[corde];
+                }
+                else {
+                    strings[corde].type = EffectType::Earth;
+                    strings[corde].active_effect = earth_effects[corde];
                 }
             }
-            // NOTE: La logique pour sortir du bypass de l'effet n'est pas présente.
+                // for (int i = 0; i < 6; i++) {
+                //     if (strings[i].type == typeToBypass) {
+                //         strings[i].type = EffectType::Bypass;
+                //         strings[i].active_effect = nullptr;
+                //     }
+                // }
         }
+            // NOTE: La logique pour sortir du bypass de l'effet n'est pas présente.
+        
         
         // Bypass Global (CC 126)
         else if (control == 126) {

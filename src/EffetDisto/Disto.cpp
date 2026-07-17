@@ -32,7 +32,7 @@ DistoEffect::DistoEffect(float sampleRate){
     tone.Init(sampleRate);
 
     // Pivot between 500 Hz and 2 kHz as the tone amount changes
-    tone.SetFreq(500.0f + 1500.0f * toneFreq);
+    tone.SetFreq(toneFreq);
 
     samplerate = sampleRate;
 
@@ -264,9 +264,9 @@ void DistoEffect::setGain(float val) {
 }
 
 void DistoEffect::setTone(float freq) {
-    freq = freq * 1500.0f;
-    toneFreq = clampf(freq, 0.0f, 1.0f);
-    tone.SetFreq(500.0f + toneFreq * 1500.0f);
+    // freq = freq * 1500.0f;
+    toneFreq = 500.0f + clampf(freq, 0.0f, 1.0f) * 1500.0f ;
+    tone.SetFreq(toneFreq);
 }
 
 void DistoEffect::setVolume(float vol){
