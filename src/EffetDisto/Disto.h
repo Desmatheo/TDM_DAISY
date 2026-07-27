@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "../Utils/Utils.h"
 
 #if USE_DAISY
@@ -38,6 +39,12 @@ class DistoEffect : public Effect {
     int effect_mode = 0;
 
     Tone2 tone;
+
+    cycfi::q::highpass preFilter{140.0f, 48000};
+    cycfi::q::lowpass postFilter{8000.0f, 48000};
+    cycfi::q::lowpass upsamplingLowpassFilter{0.0f, 48000};
+
+    std::vector<float> upsample(const std::vector<float> &input, int factor, float sample_rate);
 
 #if USE_DAISY
     DistoEffect(float sampleRate); 

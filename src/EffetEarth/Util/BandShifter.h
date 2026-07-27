@@ -44,9 +44,9 @@ public:
     void update(float sample, int type)
     {
         update_filter(sample, type);
-        // if (type == 1) update_up1();
-        // if (type == 2 || type == 3) update_down1();
-        // if (type == 3) update_down2();
+        if (type == 1) update_up1();
+        if (type == 2 || type == 3) update_down1();
+        if (type == 3) update_down2();
     }
 
     float up1() const {

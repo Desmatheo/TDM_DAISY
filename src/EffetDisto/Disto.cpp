@@ -20,11 +20,8 @@ using namespace daisysp;
 constexpr float preFilterCutoffBase = 140.0f;
 constexpr float preFilterCutoffMax = 300.0f;
 constexpr float postFilterCutoff = 8000.0f;
-cycfi::q::highpass preFilter(preFilterCutoffBase, 48000); // Dummy values that get overwritten in Init
-cycfi::q::lowpass postFilter(postFilterCutoff, 48000);    // Dummy values that get overwritten in Init
-cycfi::q::lowpass upsamplingLowpassFilter(0.0f, 48000);   // Dummy values that get overwritten in Init
 
-constexpr uint8_t overFactor = 16;
+constexpr uint8_t overFactor = 2;
 
 
 DistoEffect::DistoEffect(float sampleRate){
@@ -70,6 +67,46 @@ float diodeClipping(float input, float threshold) {
     return input;
 }
 
+float testDistortion(float input, float gainVal){
+    float g = input * gainVal;
+    
+#define Qlib 1
+ 
+#if Qlib
+#if 1
+    float z = ((g < std::signbit(g))? (-1.0f) : 1.0f) * (1.0f - fastexp(-std::abs(g)));
+#else
+    float z = ((g < std::signbit(g))? (-1.0f) : 1.0f) * (1.0f - fasterexp(-std::abs(g)));
+#endif
+#else
+    float z = ((g < std::signbit(g))? (-1.0f) : 1.0f) * (1.0f - std::exp(-std::abs(g)));
+#endif
+    return z;
+}
+
+float testOverDrive(float input, float intensity){
+    float threshold = 1.0f - intensity;
+    float abs_input = std::abs(input);
+    float sign = (input > 0.0f) ? 1.0f : ((input < 0.0f) ? -1.0f : 0.0f);
+
+    if (threshold <= 0.0001f) {
+        return sign * 1.0f; 
+    }
+
+    float x = abs_input / (3.0f * threshold);
+
+    if(x < 0.333333f){
+        return sign * 2.0f * x;
+    }
+    else if (x > 0.666667f){
+        return sign * 1.0f;
+    }
+    else {
+        float tmp = 2.0f - 3.0f * x;
+        return sign * (3.0f - tmp * tmp) / 3.0f;      
+    }
+}
+
 float softClipping(float input, float gain) { return std::tanh(input * gain); }
 
 
@@ -107,7 +144,7 @@ float dynamicPreFilterCutoff(float inputEnergy) {
 }
 
 // Helper functions for oversampling
-std::vector<float> upsample(const std::vector<float> &input, int factor, float sample_rate) {
+std::vector<float> DistoEffect::upsample(const std::vector<float> &input, int factor, float sample_rate) {
     std::vector<float> output(input.size() * factor, 0.0f);
 
     for (size_t i = 0; i < input.size(); ++i) {
@@ -155,7 +192,13 @@ void processDistortion(float &sample,           // Sample to process
         sample = multiStage(sample, gain, intensity);
         break;
     case 5: // Diode Clipping
-        sample = hardClipping(sample, 1.0f - intensity);
+        sample = diodeClipping(sample, 1.0f - intensity);
+        break;
+    case 6: // Test Distortion
+        sample = testDistortion(sample, gain);
+        break;
+    case 7: // Test Overdrive
+        sample = testOverDrive(sample, intensity);
         break;
     }
 }
@@ -179,6 +222,12 @@ void normalizeVolume(float &sample, int clippingType) {
         break;
     case 5: // Diode Clipping
         sample *= 1.8f;
+        break;
+    case 6: // Test Distortion
+        sample *= 1.0f;
+        break;
+    case 7: // Test Overdrive
+        sample *= 1.0f;
         break;
     }
 }
@@ -264,7 +313,6 @@ void DistoEffect::setGain(float val) {
 }
 
 void DistoEffect::setTone(float freq) {
-    freq = freq * 1500.0f;
     toneFreq = clampf(freq, 0.0f, 1.0f);
     tone.SetFreq(500.0f + toneFreq * 1500.0f);
 }
@@ -288,18 +336,20 @@ void DistoEffect::setIntensity(float val) {
 void DistoEffect::setParameter(int param_id, float value) {
     switch (param_id){
         case 0 : 
-            setMix(value);
+            // Mix is always 1.0f (full disto), ignore MIDI value
             break;
         case 1 : 
             setGain(value);
             break;
         case 2 :  
-            if (value >= 0.82f) setDistoMode(0);
-            else if ((0.82f > value) && (value > 0.66f)) setDistoMode(1);
-            else if ((0.66f > value) && (value > 0.49f)) setDistoMode(2);
-            else if ((0.49f > value) && (value > 0.33f)) setDistoMode(3);
-            else if ((0.33f > value) && (value > 0.16f)) setDistoMode(4);
-            else setDistoMode(5);
+            if (value < 0.125f) setDistoMode(0);
+            else if (value < 0.25f) setDistoMode(1);
+            else if (value < 0.375f) setDistoMode(2);
+            else if (value < 0.5f) setDistoMode(3);
+            else if (value < 0.625f) setDistoMode(4);
+            else if (value < 0.75f) setDistoMode(5);
+            else if (value < 0.875f) setDistoMode(6);
+            else setDistoMode(7);
             break; 
         case 3 : 
             setTone(value);

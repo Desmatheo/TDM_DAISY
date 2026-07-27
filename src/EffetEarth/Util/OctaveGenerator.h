@@ -10,7 +10,7 @@ class OctaveGenerator
 public:
     OctaveGenerator(float sample_rate)
     {
-        for (int i = 0; i < 60; ++i)
+        for (int i = 0; i < 80; ++i)
         {
             const auto center = centerFreq(i);
             const auto bw = bandwidth(i);
@@ -18,61 +18,23 @@ public:
         }
     }
 
-    void update(float sample, int type)
+   void update(float sample, int type)
     {
+        int numBand;
         _up1 = 0;
         _down1 = 0;
         _down2 = 0;
 
-        switch (type){
-            case 1:
-            for (auto& shifter : _shifters)
-            {
-                // shifter.update(sample, type);
-                shifter.update(sample, type);
-                shifter.update_up1();
-                _up1 += shifter.up1();
-            }
-            break;
-            case 2:
-            for (auto& shifter : _shifters)
-            {
-                // shifter.update(sample, type);
-                shifter.update(sample, type);
-                shifter.update_down1();
-                _down1 += shifter.down1();
-            }
-            break;
-            case 3:
-            for (auto& shifter : _shifters)
-            {
-                // shifter.update(sample, type);
-                shifter.update(sample, type);
-                shifter.update_down1();
-                _down1 += shifter.down1();
-                shifter.update_down2();
-                _down2 += shifter.down2();
-            }
-            break;
-        }
+        if (type == 1) numBand = 80;
+        if (type == 2) numBand = 40;
+        if (type == 3) numBand = 40;
 
-        // for (auto& shifter : _shifters)
-        // {
-        //     // shifter.update(sample, type);
-        //     shifter.update_filter(sample, type);
-        //     if (type == 1) {
-        //         shifter.update_up1();
-        //         _up1 += shifter.up1();
-        //     }
-        //     if (type == 2 || type == 3 ){       
-        //         shifter.update_down1();     
-        //         _down1 += shifter.down1();
-        //     }
-        //     if (type == 3) {
-        //         shifter.update_down2();
-        //         _down2 += shifter.down2();
-        //     }
-        // }
+        for (int i = 0; i < numBand; i++) {
+            _shifters[i].update(sample, type);
+            if (type == 1) _up1 += _shifters[i].up1();
+            if (type == 2 || type == 3) _down1 += _shifters[i].down1();
+            if (type == 3) _down2 += _shifters[i].down2();
+        }
     }
 
     float up1() const
