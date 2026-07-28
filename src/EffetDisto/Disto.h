@@ -42,9 +42,6 @@ class DistoEffect : public Effect {
 
     cycfi::q::highpass preFilter{140.0f, 48000};
     cycfi::q::lowpass postFilter{8000.0f, 48000};
-    cycfi::q::lowpass upsamplingLowpassFilter{0.0f, 48000};
-
-    std::vector<float> upsample(const std::vector<float> &input, int factor, float sample_rate);
 
 #if USE_DAISY
     DistoEffect(float sampleRate); 
@@ -79,6 +76,7 @@ class DistoEffect : public Effect {
 
 private:
     bool active = false; // effet actif ou non
+    float anti_denormal = 1e-9f;
     
 };
 #endif
