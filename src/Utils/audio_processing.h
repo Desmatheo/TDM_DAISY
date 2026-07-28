@@ -73,28 +73,36 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 float* out_ptrs[2] = {out_arr[0], out_arr[1]};
                 float out_sample = 0.0f;
 
+                float current_sample = in_sample;
 
-                if (strings[j].type == EffectType::Testation){
+                // Stage 1
+                if (strings[j].active_effect != nullptr) {
+                    in_arr[0][0] = current_sample;
+                    in_arr[1][0] = current_sample;
                     strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
-
-                    float in_sample2 = out_arr[0][0];
-                    float in_arr2[2][1] = {{in_sample2}, {in_sample2}};
-                    const float* in_ptrs2[2] = {in_arr2[0], in_arr2[1]};
-
-                    float out_arr2[2][1] = {{0.0f}, {0.0f}};
-                    float* out_ptrs2[2] = {out_arr2[0], out_arr2[1]};
-                    strings[j].active_effect_bonus->update(in_ptrs2, out_ptrs2, 0);
-
-                    out_sample = out_arr2[0][0];
-
-                } else if (strings[j].active_effect != nullptr && strings[j].type != EffectType::Testation) {
-                    strings[j].active_effect->update(in_ptrs, out_ptrs, 0);
-                    
-                    out_sample = out_arr[0][0];
-
-                } else {
-                    out_sample = in_sample;
+                    current_sample = out_arr[0][0];
                 }
+
+                // Stage 2 (seulement si l'effet est différent du Slot 1)
+                if (strings[j].active_effect_bonus != nullptr && 
+                    strings[j].active_effect_bonus != strings[j].active_effect) {
+                    in_arr[0][0] = current_sample;
+                    in_arr[1][0] = current_sample;
+                    strings[j].active_effect_bonus->update(in_ptrs, out_ptrs, 0);
+                    current_sample = out_arr[0][0];
+                }
+
+                // Stage 3 (seulement si l'effet est différent des Slots 1 et 2)
+                if (strings[j].active_effect_bonus_bonus != nullptr && 
+                    strings[j].active_effect_bonus_bonus != strings[j].active_effect &&
+                    strings[j].active_effect_bonus_bonus != strings[j].active_effect_bonus) {
+                    in_arr[0][0] = current_sample;
+                    in_arr[1][0] = current_sample;
+                    strings[j].active_effect_bonus_bonus->update(in_ptrs, out_ptrs, 0);
+                    current_sample = out_arr[0][0];
+                }
+
+                out_sample = current_sample;
 
                 out[j][i] = out_sample;
             }
