@@ -21,7 +21,6 @@ constexpr float preFilterCutoffBase = 140.0f;
 constexpr float preFilterCutoffMax = 300.0f;
 constexpr float postFilterCutoff = 8000.0f;
 
-constexpr uint8_t overFactor = 2;
 
 
 DistoEffect::DistoEffect(float sampleRate){
@@ -47,23 +46,16 @@ DistoEffect::DistoEffect(float sampleRate){
 
 void DistoEffect::InitializeFilters() {
     preFilter.config(preFilterCutoffBase, samplerate);
-
-    if (oversamp) {
-        postFilter.config(postFilterCutoff, samplerate * overFactor);
-    } else {
-        postFilter.config(postFilterCutoff, samplerate);
-    }
-
-    upsamplingLowpassFilter.config(samplerate / (2.0f * static_cast<float>(overFactor)), samplerate);
+    postFilter.config(postFilterCutoff, samplerate);
 }
 
 float hardClipping(float input, float threshold) { return std::clamp(input, -threshold, threshold); }
 
 float diodeClipping(float input, float threshold) {
     if (input > threshold)
-        return threshold - std::exp(-(input - threshold));
+        return threshold - fastexp(-(input - threshold));
     else if (input < -threshold)
-        return -threshold + std::exp(input + threshold);
+        return -threshold + fastexp(input + threshold);
     return input;
 }
 
@@ -86,28 +78,31 @@ float testDistortion(float input, float gainVal){
 
 float testOverDrive(float input, float intensity){
     float threshold = 1.0f - intensity;
+    if (threshold < 0.0001f) threshold = 0.0001f;
+    
     float abs_input = std::abs(input);
     float sign = (input > 0.0f) ? 1.0f : ((input < 0.0f) ? -1.0f : 0.0f);
-
-    if (threshold <= 0.0001f) {
-        return sign * 1.0f; 
+ 
+    if(abs_input < threshold){
+        return 2.0f * input;
     }
-
-    float x = abs_input / (3.0f * threshold);
-
-    if(x < 0.333333f){
-        return sign * 2.0f * x;
-    }
-    else if (x > 0.666667f){
+    else if (abs_input > 2.0f * threshold){
         return sign * 1.0f;
     }
     else {
-        float tmp = 2.0f - 3.0f * x;
-        return sign * (3.0f - tmp * tmp) / 3.0f;      
+        float tmp = 2.0f - abs_input * 3.0f;
+        return sign * ((3.0f - tmp * tmp) / 3.0f);      
     }
 }
 
-float softClipping(float input, float gain) { return std::tanh(input * gain); }
+inline float fast_tanh(float x) {
+    if (x <= -3.0f) return -1.0f;
+    if (x >= 3.0f) return 1.0f;
+    float x2 = x * x;
+    return x * (27.0f + x2) / (27.0f + 9.0f * x2);
+}
+
+float softClipping(float input, float gain) { return fast_tanh(input * gain); }
 
 
 float fuzzEffect(float input, float intensity) {
@@ -124,7 +119,12 @@ float fuzzEffect(float input, float intensity) {
     return fuzzed;
 }
 
-float tubeSaturation(float input, float gain) { return std::atan(input * gain); }
+inline float fast_atan(float x) {
+    // Fast overdrive approximation replacing atan
+    return x / (1.0f + std::abs(x));
+}
+
+float tubeSaturation(float input, float gain) { return fast_atan(input * gain); }
 
 float multiStage(float sample, float drive, float intensity) {
     // First stage
@@ -140,33 +140,9 @@ float multiStage(float sample, float drive, float intensity) {
 }
 
 float dynamicPreFilterCutoff(float inputEnergy) {
-    return preFilterCutoffBase + (preFilterCutoffMax - preFilterCutoffBase) * std::tanh(inputEnergy);
+    return preFilterCutoffBase + (preFilterCutoffMax - preFilterCutoffBase) * fast_tanh(inputEnergy);
 }
 
-// Helper functions for oversampling
-std::vector<float> DistoEffect::upsample(const std::vector<float> &input, int factor, float sample_rate) {
-    std::vector<float> output(input.size() * factor, 0.0f);
-
-    for (size_t i = 0; i < input.size(); ++i) {
-        // Insert input samples, leaving zeros in between
-        output[i * factor] = input[i];
-    }
-
-    // Apply the low-pass filter to smooth interpolated samples
-    for (size_t i = 1; i < output.size(); ++i) {
-        output[i] = upsamplingLowpassFilter(output[i]);
-    }
-
-    return output;
-}
-
-std::vector<float> downsample(const std::vector<float> &input, int factor) {
-    std::vector<float> output(input.size() / factor);
-    for (size_t i = 0; i < output.size(); ++i) {
-        output[i] = input[i * factor]; // Take every nth sample
-    }
-    return output;
-}
 
 void processDistortion(float &sample,           // Sample to process
                        const float &gain,       // Gain
@@ -248,13 +224,17 @@ void DistoEffect::update(const float** in, float** out, int idx) {
     float inputL;
     float inputR;
 
-    inputL = inputR = in[0][idx] + 1e-9f; // Anti-denormal
+    // Bruit de Nyquist (alterné) : +1e-9f, -1e-9f, +1e-9f...
+    // Contrairement au courant continu (DC), ce bruit traverse le filtre passe-haut (preFilter)
+    // et empêche tous les filtres suivants (postFilter) de crasher sur des nombres sous-normaux.
+    anti_denormal = -anti_denormal;
+
+    inputL = inputR = in[0][idx] + anti_denormal;
 
     float distorted = inputL;
 
     // Apply high-pass filter to remove excessive low frequencies
-    const float energy = std::abs(distorted);
-    preFilter.config(dynamicPreFilterCutoff(energy), samplerate);
+    // (preFilter cutoff is now fixed in InitializeFilters to prevent audio-rate modulation crash)
     distorted = preFilter(distorted);
 
 
@@ -264,31 +244,10 @@ void DistoEffect::update(const float** in, float** out, int idx) {
     distorted = distorted * 0.5f;
 
 
-    if (oversamp) {
-        // Prepare signal for oversampling
-        std::vector<float> monoInput = {distorted};
-        std::vector<float> oversampledInput = upsample(monoInput, overFactor, samplerate);
+    processDistortion(distorted, computed_gain, effect_mode, intensity);
 
-        // Apply gain and distortion processing
-        for (float &sample : oversampledInput) {
-            processDistortion(sample, computed_gain, effect_mode, intensity);
-
-            // Post-filter: Low-pass to smooth out harsh high frequencies
-            sample = postFilter(sample);
-        }
-
-        // Downsample back to original sample rate
-        const std::vector<float> downsampledOutput = downsample(oversampledInput, overFactor);
-        distorted = downsampledOutput[0];
-
-        // Apply gain compensation for oversampling
-        distorted *= overFactor;
-    } else {
-        processDistortion(distorted, computed_gain, effect_mode, intensity);
-
-        // Post-filter: Low-pass to smooth out harsh high frequencies
-        distorted = postFilter(distorted);
-    }
+    // Post-filter: Low-pass to smooth out harsh high frequencies
+    distorted = postFilter(distorted);
 
     // Normalize the volume between the types of distortion
     normalizeVolume(distorted, effect_mode);
