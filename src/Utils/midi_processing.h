@@ -37,30 +37,44 @@ static void HandleMidiMessages(){
             // Delay (CC 10-15)
             if (control >= 10 && control <= 15) {
                 int potard = control - 10;
-                strings[corde].type = EffectType::Delay;
-                strings[corde].active_effect = delay_effects[corde];
                 delay_effects[corde]->setParameter(potard, value_norm);
             }
             // Distortion (CC 50-55)
             else if (control >= 50 && control <= 55) { 
                 int potard = control - 50;
-                strings[corde].type = EffectType::Disto;
-                strings[corde].active_effect = disto_effects[corde]; 
                 disto_effects[corde]->setParameter(potard, value_norm);
             }
             // Earth (CC 90-95)
             else if (control >= 90 && control <= 95) {
                 int potard = control - 90;
-                strings[corde].type = EffectType::Earth;
-                strings[corde].active_effect = earth_effects[corde];
                 earth_effects[corde]->setParameter(potard, value_norm);
             }
             // Tremolo (CC 110-115)
             else if (control >= 110 && control <= 115) {
                 int potard = control - 110;
-                strings[corde].type = EffectType::Tremolo;
-                strings[corde].active_effect = tremolo_effects[corde];
                 tremolo_effects[corde]->setParameter(potard, value_norm);
+            }
+            // --- Chaining / Testation Mode ---
+            else if (control == 9) {
+                if (cc.value > 63) {
+                    strings[corde].type = EffectType::Testation;
+                } else {
+                    strings[corde].type = EffectType::Bypass;
+                    strings[corde].active_effect = nullptr;
+                    strings[corde].active_effect_bonus = nullptr;
+                    strings[corde].active_effect_bonus_bonus = nullptr;
+                }
+            }
+            else if (control >= 20 && control <= 22) {
+                Effect* selected_effect = nullptr;
+                if (cc.value == 1) selected_effect = delay_effects[corde];
+                else if (cc.value == 2) selected_effect = disto_effects[corde];
+                else if (cc.value == 3) selected_effect = earth_effects[corde];
+                else if (cc.value == 4) selected_effect = tremolo_effects[corde];
+
+                if (control == 20) strings[corde].active_effect = selected_effect;
+                else if (control == 21) strings[corde].active_effect_bonus = selected_effect;
+                else if (control == 22) strings[corde].active_effect_bonus_bonus = selected_effect;
             }
         }
         
@@ -116,14 +130,11 @@ static void HandleMidiMessages(){
                 for (int i = 0; i < 6; i++) {
                     strings[i].type = EffectType::Bypass;
                     strings[i].active_effect = nullptr;
+                    strings[i].active_effect_bonus = nullptr;
+                    strings[i].active_effect_bonus_bonus = nullptr;
                 }
             }
             // NOTE: La logique pour sortir du bypass global n'est pas présente.
-        }
-        
-        // Changement d'effet (CC 9) - non utilisé
-        else if (control == 9) {
-            // Emplacement pour une future implémentation.
         }
     }
 }
