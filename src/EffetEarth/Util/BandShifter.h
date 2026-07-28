@@ -3,6 +3,7 @@
 #include <cmath>
 #include <complex>
 #include <numbers>
+#include <algorithm>
 
 #include "FastSqrt.h"
 
@@ -105,8 +106,9 @@ public:
         const auto b = _y.imag();
         const auto a_carre = a*a;
         const auto b_carre = b*b;
-        // _up1 = (a*a - b*b) * fastInvSqrt(a*a + b*b);
-        _up1 = (a_carre - b_carre) * fastInvSqrt(a_carre + b_carre);
+        const auto mag_sq = a_carre + b_carre;
+        const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
+        _up1 = (a_carre - b_carre) * fastInvSqrt(safe_mag);
     }
 
     void update_down1()
@@ -120,8 +122,8 @@ public:
         const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
 
         const auto x = 0.5f * a * fastInvSqrt(safe_mag);
-        const auto c = fastSqrt(0.5f + x);
-        const auto d = b_sign * fastSqrt(0.5f - x);
+        const auto c = fastSqrt(std::max(0.0f, 0.5f + x));
+        const auto d = b_sign * fastSqrt(std::max(0.0f, 0.5f - x));
 
         const auto prev_down1 = _down1;
         _down1 = _down1_sign * std::complex<float>((a*c + b*d), (b*c - a*d));
@@ -143,8 +145,8 @@ public:
         const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
 
         const auto x = 0.5f * a * fastInvSqrt(safe_mag);
-        const auto c = fastSqrt(0.5f + x);
-        const auto d = b_sign * fastSqrt(0.5f - x);
+        const auto c = fastSqrt(std::max(0.0f, 0.5f + x));
+        const auto d = b_sign * fastSqrt(std::max(0.0f, 0.5f - x));
 
         _down2 = _down2_sign * (a*c + b*d);
     }
