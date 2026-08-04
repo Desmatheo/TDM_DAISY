@@ -17,7 +17,10 @@ public:
     float wetMix;
     float volume;
 
-    daisysp::Tremolo tremolo;
+    daisysp::Oscillator lfo;
+    daisysp::OnePole lfoFilter;
+    float depthVal = 0.5f;
+    float anti_denormal = 1e-9f;
 
     TremoloEffect(float sampleRate); 
 
