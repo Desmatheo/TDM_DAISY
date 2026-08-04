@@ -32,6 +32,7 @@ class DistoEffect : public Effect {
     float max_gain = 20.0f;
 
     float toneFreq;
+    float toneFreqTarget;
     bool oversamp;
     float intensity;
 

@@ -51,12 +51,18 @@ void DistoEffect::InitializeFilters() {
 
 float hardClipping(float input, float threshold) { return std::clamp(input, -threshold, threshold); }
 
-float diodeClipping(float input, float threshold) {
+float diodeClipping(float input, float threshold, float intensity) {
+    // Boost signal beforehand to make it hit the threshold earlier
+    float preGain = 1.0f + intensity * 4.0f; // up to 5x gain
+    input *= preGain;
+    float out;
     if (input > threshold)
-        return threshold - fastexp(-(input - threshold));
+        out = threshold - fastexp(-(input - threshold));
     else if (input < -threshold)
-        return -threshold + fastexp(input + threshold);
-    return input;
+        out = -threshold + fastexp(input + threshold);
+    else
+        out = input;
+    return out / preGain; // compensate volume
 }
 
 float testDistortion(float input, float gainVal){
@@ -168,7 +174,7 @@ void processDistortion(float &sample,           // Sample to process
         sample = multiStage(sample, gain, intensity);
         break;
     case 5: // Diode Clipping
-        sample = diodeClipping(sample, 1.0f - intensity);
+        sample = diodeClipping(sample, 1.0f - (intensity * 0.5f), intensity);
         break;
     case 6: // Test Distortion
         sample = testDistortion(sample, gain);
@@ -179,7 +185,7 @@ void processDistortion(float &sample,           // Sample to process
     }
 }
 
-void normalizeVolume(float &sample, int clippingType) {
+void normalizeVolume(float &sample, int clippingType, float intensity, float gain) {
     switch (clippingType) {
     case 0: // Hard Clipping
         sample *= 1.8f;
@@ -188,13 +194,14 @@ void normalizeVolume(float &sample, int clippingType) {
         sample *= 0.8f;
         break;
     case 2: // Fuzz
-        sample *= 1.0f;
+        // Auto-gain depending on intensity to avoid huge volume jumps
+        sample *= 1.0f / (1.0f + intensity * 2.0f);
         break;
     case 3: // Tube Saturation
-        sample *= 0.9f;
+        sample *= 0.9f / (1.0f + intensity);
         break;
     case 4: // Multi-stage
-        sample *= 0.5f;
+        sample *= 0.5f / (1.0f + intensity * gain * 0.1f);
         break;
     case 5: // Diode Clipping
         sample *= 1.8f;
@@ -250,7 +257,11 @@ void DistoEffect::update(const float** in, float** out, int idx) {
     distorted = postFilter(distorted);
 
     // Normalize the volume between the types of distortion
-    normalizeVolume(distorted, effect_mode);
+    normalizeVolume(distorted, effect_mode, intensity, gain);
+
+    // Parameter smoothing for Tone to prevent zipper noise
+    toneFreq = 0.999f * toneFreq + 0.001f * toneFreqTarget;
+    tone.SetFreq(500.0f + toneFreq * 1500.0f);
 
     // Apply tilt-tone filter
     const float effect_output = ProcessTiltToneControl(distorted);
@@ -272,8 +283,7 @@ void DistoEffect::setGain(float val) {
 }
 
 void DistoEffect::setTone(float freq) {
-    toneFreq = clampf(freq, 0.0f, 1.0f);
-    tone.SetFreq(500.0f + toneFreq * 1500.0f);
+    toneFreqTarget = clampf(freq, 0.0f, 1.0f);
 }
 
 void DistoEffect::setVolume(float vol){
