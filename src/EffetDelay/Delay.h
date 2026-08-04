@@ -3,50 +3,61 @@
 #include "../Utils/Effect.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include "delayline_oct.h"
+#include "arm_math.h"
 #include "../Utils/Utils.h"
 
-#define MAX_DELAY 5000 // ~85 ms de délai maximum pour tenir dans la RAM de la Daisy
+// 4s of delay at 48kHz
+#define MAX_DELAY_SAMPLES (48000 * 4) 
 
 class DelayEffect : public Effect {
 public:
-    // Classe interne pour gérer un canal de delay
-    class DelayChannel {
-    public:
-        void Init(daisysp::DelayLineOct<float, MAX_DELAY>* delayLine, float sampleRate);
+
+    struct DelayChannel {
+        float* buffer = nullptr;
+        uint32_t buf_len = 0;
+        uint32_t write_idx = 0;
+        
+        float tone_z1 = 0.0f;
+        float tone_a0 = 1.0f;
+        float tone_b1 = 0.0f;
+
+        float muteFade = 1.0f;
+        uint32_t standbyTimer = 0;
+        float lastTarget = 0.0f;
+        float currentDelay = 0.0f;
+        float delayTarget = 0.0f;
+        float feedback = 0.0f;
+        bool active = false;
+
+        void Init(float* mem, float sampleRate, uint32_t max_delay_samples);
         float Process(float in);
-
-        daisysp::DelayLineOct<float, MAX_DELAY>* del;
-        daisysp::Tone tone;
-
-        float currentDelay;
-        float delayTarget;
-        float feedback;
-        bool active;
-
-        // Pour le mode standby anti-clics
-        float muteFade;
-        int standbyTimer;
-        float lastTarget;
     };
 
-    // Constructeur
     DelayEffect(float sampleRate);
 
-    // La fonction de traitement audio principale
     void update(const float** in, float** out, int idx) override;
 
-    // Fonctions pour régler les paramètres ("setters")
     void setMix(float mix);
-    void setDelayTime(float time);
-    void setFeedback(float fdbk);
     void setVolume(float vol);
+    void setDelayTime(float time); // manual time mapping
+    void setFeedback(float fdbk);
+    
+    // Nouveaux paramètres pour Tap Tempo
+    void setType(float type); // 0 = manual, 1 = tempo
+    void setDivision(float div); // 1 = ronde, 2 = blanche... 
+    
     void setParameter(int param_id, float value) override;
 
 private:
-    DelayChannel delayL; // On en utilisera qu'un seul (L) pour l'effet mono
-    daisysp::DelayLineOct<float, MAX_DELAY> delayLineOctLeft;
+    DelayChannel delayL;
 
     float dryMix, wetMix, volume;
-    float vdelayTime, vdelayFDBK; // Pour garder la valeur des potards
+    float vdelayTime, vdelayFDBK;
+    float vdelayDiv = 0.0f; // 0..1 pour division 1..8
+    
+    // Pour gérer le tempo dynamique
+    bool isTempoMode = false;
+    float sample_rate_;
+
+    void updateTargetDelay();
 };
