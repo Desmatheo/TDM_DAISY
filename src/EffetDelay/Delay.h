@@ -28,6 +28,7 @@ public:
         float delayTarget = 0.0f;
         float feedback = 0.0f;
         bool active = false;
+        float anti_denormal = 1e-9f;
 
         void Init(float* mem, float sampleRate, uint32_t max_delay_samples);
         float Process(float in);
@@ -39,12 +40,11 @@ public:
 
     void setMix(float mix);
     void setVolume(float vol);
+    void setDelayMode(float mode); // 0 = manual, 1 = tempo
     void setDelayTime(float time); // manual time mapping
+    void setBpm(float bpm);
+    void setSubdivision(float value); 
     void setFeedback(float fdbk);
-    
-    // Nouveaux paramètres pour Tap Tempo
-    void setType(float type); // 0 = manual, 1 = tempo
-    void setDivision(float div); // 1 = ronde, 2 = blanche... 
     
     void setParameter(int param_id, float value) override;
 
@@ -52,12 +52,15 @@ private:
     DelayChannel delayL;
 
     float dryMix, wetMix, volume;
-    float vdelayTime, vdelayFDBK;
-    float vdelayDiv = 0.0f; // 0..1 pour division 1..8
+    float vdelayFDBK;
     
     // Pour gérer le tempo dynamique
-    bool isTempoMode = false;
+    int delayMode = 0;
+    float manualTimeMs = 500.0f;
+    float currentBPM = 120.0f;
+    float currentSubdivisionMult = 1.0f;
+
     float sample_rate_;
 
-    void updateTargetDelay();
+    void recalculateDelayTime();
 };

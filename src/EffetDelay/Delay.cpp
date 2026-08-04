@@ -75,8 +75,9 @@ float DelayEffect::DelayChannel::Process(float in) {
     float read = tone_a0 * del_read + tone_b1 * tone_z1;
     tone_z1 = read;
 
-    // Écriture dans la ligne de delay (avec feedback)
-    float write_val = feedback * read;
+    // Écriture dans la ligne de delay (avec feedback et anti-denormal)
+    anti_denormal = -anti_denormal;
+    float write_val = feedback * read + anti_denormal;
     if (active) {
         write_val += in;
     }
@@ -122,8 +123,10 @@ void DelayEffect::update(const float** in, float** out, int idx) {
 }
 
 void DelayEffect::setMix(float mix) {
-    wetMix = clampf(mix, 0.0f, 1.0f);
-    dryMix = 1.0f - wetMix;
+    float clampedMix = clampf(mix, 0.0f, 1.0f);
+    // Constant power panning law
+    wetMix = sinf(clampedMix * (float)M_PI_2);
+    dryMix = cosf(clampedMix * (float)M_PI_2);
 }
 
 void DelayEffect::setVolume(float vol) {
@@ -135,52 +138,73 @@ void DelayEffect::setFeedback(float fdbk) {
     delayL.feedback = vdelayFDBK;
 }
 
-void DelayEffect::updateTargetDelay() {
-    float target_ms = 50.0f;
-    if (isTempoMode) {
-        float bpm = 40.0f + (vdelayTime * 200.0f);
-        float div = roundf(1.0f + (vdelayDiv * 7.0f));
-        float beat_duration_ms = 60000.0f / bpm;
-        target_ms = beat_duration_ms / div;
-    } else {
-        target_ms = 50.0f + (vdelayTime * 3950.0f);
-    }
-
-    target_ms = clampf(target_ms, 1.0f, 4000.0f);
-    float target_samples = (target_ms / 1000.0f) * sample_rate_;
-    
-    delayL.delayTarget = clampf(target_samples, 1.0f, (float)MAX_DELAY_SAMPLES - 1.0f);
-}
-
-void DelayEffect::setType(float type) {
-    isTempoMode = (type >= 0.5f);
-    updateTargetDelay();
-}
-
-void DelayEffect::setDivision(float div) {
-    vdelayDiv = clampf(div, 0.0f, 1.0f);
-    updateTargetDelay();
+void DelayEffect::setDelayMode(float mode) {
+    delayMode = (mode < 0.5f) ? 0 : 1;
+    recalculateDelayTime();
 }
 
 void DelayEffect::setDelayTime(float time) {
-    vdelayTime = clampf(time, 0.0f, 1.0f);
-    bool isActive = (vdelayTime > 0.01f);
-    delayL.active = isActive;
-    updateTargetDelay();
+    // Mapping linéaire de 50ms à 4000ms
+    manualTimeMs = 50.0f + time * (4000.0f - 50.0f);
+    recalculateDelayTime();
+}
+
+void DelayEffect::setBpm(float value) {
+    currentBPM = 40.0f + value * (250.0f - 40.0f);
+    recalculateDelayTime();
+}
+
+void DelayEffect::setSubdivision(float value) {
+    int idx = roundf(value * 7.0f); 
+    if (idx < 0) idx = 0;
+    if (idx > 7) idx = 7;
+    
+    const float multipliers[8] = {0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f};
+    currentSubdivisionMult = multipliers[idx];
+    recalculateDelayTime();
+}
+
+void DelayEffect::recalculateDelayTime() {
+    float target_ms = 0.0f;
+    
+    if (delayMode == 0) { // Manual Mode
+        target_ms = manualTimeMs;
+    } else { // Tempo Mode
+        float ms_per_quarter = 60000.0f / (currentBPM > 0.01f ? currentBPM : 120.0f);
+        target_ms = ms_per_quarter * currentSubdivisionMult;
+    }
+
+    // Convert ms to samples
+    float target_samples = target_ms * (sample_rate_ / 1000.0f);
+
+    // Limit to max and min
+    if (target_samples > static_cast<float>(MAX_DELAY_SAMPLES - 1.0f)) {
+        target_samples = static_cast<float>(MAX_DELAY_SAMPLES - 1.0f);
+    }
+    if (target_samples < 2400.0f) { // Min internal limit
+        target_samples = 2400.0f;
+    }
+
+    delayL.delayTarget = target_samples;
+    delayL.active = true;
 }
 
 void DelayEffect::setParameter(int param_id, float value) {
     switch (param_id) {
-        case 0: // Type
-            setType(value);
+        case 0: // Type (Mode)
+            setDelayMode(value);
             break;
-        case 1: // Time (Delay ms ou Tempo bpm)
-            setDelayTime(value);
+        case 1: // Time / Tempo
+            if (delayMode == 0) {
+                setDelayTime(value);
+            } else {
+                setBpm(value);
+            }
             break;
-        case 2: // Tap (bouton ignoré en MIDI logiquement, géré par le GUI)
+        case 2: // Tap
             break;
-        case 3: // Temps (division)
-            setDivision(value);
+        case 3: // Temps (Subdivision)
+            setSubdivision(value);
             break;
         case 4: // FeedBack
             setFeedback(value);
