@@ -43,7 +43,8 @@ void EarthEffect::update(const float** in, float** out, int idx) {
     float inputL;
     float inputR;
 
-    inputL = inputR = in[0][idx] + 1e-9f; // Anti-denormal
+    anti_denormal = -anti_denormal;
+    inputL = inputR = in[0][idx] + anti_denormal; // Anti-denormal
 
     buff[bin_counter] = inputL;
     
@@ -56,9 +57,12 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 
             octave.update(sample, effect_mode);
 
-            if (effect_mode == 1) octave_mix += octave.up1() *      6.0;
-            if (effect_mode == 2) octave_mix += octave.down1() *    6.0;
-            if (effect_mode == 3) octave_mix += octave.down2() *    6.0;
+            if (effect_mode == 1) {
+                float raw_up = octave.up1() * 6.0f;
+                octave_mix += raw_up; 
+            }
+            if (effect_mode == 2) octave_mix += octave.down1() *    6.0f;
+            if (effect_mode == 3) octave_mix += octave.down2() *    6.0f;
 
             auto out_chunk = interpolate(octave_mix);
             for (size_t j = 0; j < out_chunk.size(); ++j) {
@@ -100,8 +104,9 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 // --- Implémentation des Setters Spécifiques ---
 
 void EarthEffect::setMix(float mix) {
-    dryMix = 1.0f - mix;
-    wetMix = mix;
+    float clampedMix = clampf(mix, 0.0f, 1.0f);
+    wetMix = sinf(clampedMix * (float)M_PI_2);
+    dryMix = cosf(clampedMix * (float)M_PI_2);
 }
 
 void EarthEffect::setVolume(float vol)

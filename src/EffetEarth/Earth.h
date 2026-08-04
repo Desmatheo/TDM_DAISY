@@ -45,6 +45,7 @@ class EarthEffect : public Effect {
     float buff[6];
     float buff_out[6];
     int bin_counter = 0;
+    float anti_denormal = 1e-9f;
 
     float current_ODswell;
 
