@@ -35,6 +35,7 @@ class DistoEffect : public Effect {
     float toneFreqTarget;
     bool oversamp;
     float intensity;
+    float os_prev_sample = 0.0f;
 
 
     int effect_mode = 0;
@@ -78,6 +79,8 @@ class DistoEffect : public Effect {
 private:
     bool active = false; // effet actif ou non
     float anti_denormal = 1e-9f;
+    float x_prev_adaa = 0.0f;     // Mémoire pour l'ADAA
+    daisysp::Svf os_filter; // Filtre Anti-Aliasing (Sortie) (Downsampling)
     
 };
 #endif

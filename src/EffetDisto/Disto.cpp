@@ -3,6 +3,7 @@
 #include "Disto.h"
 
 #include <span>
+#include <cmath>
 
 #if USE_DAISY
 #include "daisy_seed.h"
@@ -47,6 +48,12 @@ DistoEffect::DistoEffect(float sampleRate){
 void DistoEffect::InitializeFilters() {
     preFilter.config(preFilterCutoffBase, samplerate);
     postFilter.config(postFilterCutoff, samplerate);
+
+    // Initialisation du filtre de downsampling (tourne à 2x la fréquence d'origine)
+    os_filter.Init(samplerate * 2.0f);
+    os_filter.SetFreq(samplerate * 0.5f); // Coupe à la limite de Nyquist d'origine (ex: 24kHz)
+    os_filter.SetRes(0.0f);               // Pas de résonance (Butterworth)
+    os_filter.SetDrive(0.0f);
 }
 
 float hardClipping(float input, float threshold) { return std::clamp(input, -threshold, threshold); }
@@ -150,37 +157,169 @@ float dynamicPreFilterCutoff(float inputEnergy) {
 }
 
 
+// --- ADAA INTEGRALS AND WRAPPERS ---
+
+inline float integral_hardclip(float x, float threshold) {
+    float abs_x = std::abs(x);
+    if (abs_x > threshold) return threshold * abs_x - (threshold * threshold * 0.5f);
+    else return x * x * 0.5f;
+}
+
+float hardClippingADAA(float input, float threshold, float &x_prev) {
+    float diff = input - x_prev;
+    float result;
+    if (std::abs(diff) < 0.05f) {
+        result = hardClipping((input + x_prev) * 0.5f, threshold);
+    } else {
+        result = (float)(( (double)integral_hardclip(input, threshold) - (double)integral_hardclip(x_prev, threshold) ) / (double)diff);
+    }
+    x_prev = input;
+    return result;
+}
+
+inline float integral_fast_tanh(float x) {
+    float abs_x = std::abs(x);
+    if (abs_x >= 3.0f) return abs_x + 0.8132089f;
+    float x2 = x * x;
+    return (x2 / 18.0f) + (4.0f / 3.0f) * std::log(x2 + 3.0f);
+}
+
+float softClippingADAA(float input, float gain, float &x_prev) {
+    float x = input * gain;
+    float diff = x - x_prev;
+    float result;
+    if (std::abs(diff) < 0.05f) {
+        result = fast_tanh((x + x_prev) * 0.5f);
+    } else {
+        result = (float)(( (double)integral_fast_tanh(x) - (double)integral_fast_tanh(x_prev) ) / (double)diff);
+    }
+    x_prev = x;
+    return result;
+}
+
+inline float integral_fast_atan(float x) {
+    float abs_x = std::abs(x);
+    return abs_x - std::log(1.0f + abs_x);
+}
+
+float tubeSaturationADAA(float input, float gain, float &x_prev) {
+    float x = input * gain;
+    float diff = x - x_prev;
+    float result;
+    if (std::abs(diff) < 0.05f) {
+        result = fast_atan((x + x_prev) * 0.5f);
+    } else {
+        result = (float)(( (double)integral_fast_atan(x) - (double)integral_fast_atan(x_prev) ) / (double)diff);
+    }
+    x_prev = x;
+    return result;
+}
+
+inline float integral_diode(float x, float threshold) {
+    float C = -(threshold * threshold * 0.5f) - 1.0f;
+    if (x > threshold) return (threshold * x) + fastexp(-(x - threshold)) + C;
+    else if (x < -threshold) return (-threshold * x) + fastexp(x + threshold) + C;
+    else return (x * x) * 0.5f;
+}
+
+float diodeClippingADAA(float input, float threshold, float intensity, float &x_prev) {
+    float preGain = 1.0f + intensity * 4.0f;
+    float x = input * preGain;
+    float diff = x - x_prev;
+    float out;
+    if (std::abs(diff) < 0.05f) {
+        float mid = (x + x_prev) * 0.5f;
+        if (mid > threshold) out = threshold - fastexp(-(mid - threshold));
+        else if (mid < -threshold) out = -threshold + fastexp(mid + threshold);
+        else out = mid;
+    } else {
+        out = (float)(( (double)integral_diode(x, threshold) - (double)integral_diode(x_prev, threshold) ) / (double)diff);
+    }
+    x_prev = x;
+    return out / preGain;
+}
+
+inline float integral_testDistortion(float x) {
+    float abs_x = std::abs(x);
+    return abs_x + fastexp(-abs_x);
+}
+
+float testDistortionADAA(float input, float gainVal, float &x_prev) {
+    float x = input * gainVal;
+    float diff = x - x_prev;
+    float result;
+    if (std::abs(diff) < 0.05f) {
+        float mid = (x + x_prev) * 0.5f;
+        result = ((mid < std::signbit(mid))? (-1.0f) : 1.0f) * (1.0f - fastexp(-std::abs(mid)));
+    } else {
+        result = (float)(( (double)integral_testDistortion(x) - (double)integral_testDistortion(x_prev) ) / (double)diff);
+    }
+    x_prev = x;
+    return result;
+}
+
+// --- OVERPROCESS WRAPPER ---
+// Permet de traiter la distorsion en tant que fonction pour l'oversampling
+float processDistortionCore(float sample, const float gain, const int clippingType, const float intensity) {
+    sample *= gain;
+    switch (clippingType) {
+    case 2: return fuzzEffect(sample, intensity * 10.0f);
+    case 4: return multiStage(sample, gain, intensity);
+    case 7: return testOverDrive(sample, intensity);
+    default: return sample; // Cas inatteignable si on filtre bien avant
+    }
+}
+
 void processDistortion(float &sample,           // Sample to process
                        const float &gain,       // Gain
                        const int &clippingType, // Clipping type
-                       const float &intensity)  // Intensity
+                       const float &intensity,  // Intensity
+                       float &x_prev_adaa,      // ADAA Memory
+                       bool oversamp,           // Oversampling flag
+                       float &os_prev_sample,   // Previous Sample for Linear Interp
+                       Svf &os_filter)          // Oversampling Output Filter
 {
-    sample *= gain;
+    // Mode 2, 4, 7 -> OVERSAMPLING x2 (Interpolation Linéaire)
+    if (clippingType == 2 || clippingType == 4 || clippingType == 7) {
+        if (oversamp) {
+            // Upsample V5 : Interpolation Linéaire x2
+            // L'interpolation linéaire crée des encoches parfaites à 48kHz, empêchant l'intermodulation !
+            float s1 = (os_prev_sample + sample) * 0.5f;
+            float s2 = sample;
+            os_prev_sample = sample;
+            
+            // Traitement de la distorsion sur le signal à 96kHz
+            s1 = processDistortionCore(s1, gain, clippingType, intensity);
+            s2 = processDistortionCore(s2, gain, clippingType, intensity);
+            
+            // Downsampling V5 : Filtrage Biquad Anti-Aliasing
+            os_filter.Process(s1);
+            os_filter.Process(s2);
+            sample = os_filter.Low(); // On garde uniquement le 2ème échantillon (décimation)
+        } else {
+            // Pas d'oversampling
+            sample = processDistortionCore(sample, gain, clippingType, intensity);
+        }
+        return;
+    }
 
+    // Modes ADAA -> Zéro Oversampling (Tourne à 48kHz natif)
+    sample *= gain;
     switch (clippingType) {
     case 0: // Hard Clipping
-        sample = hardClipping(sample, 1.0f - intensity);
+        sample = hardClippingADAA(sample, 1.0f - intensity, x_prev_adaa);
         break;
     case 1: // Soft Clipping
-        sample = softClipping(sample, gain);
-        break;
-    case 2: // Fuzz
-        sample = fuzzEffect(sample, intensity * 10.0f);
+        sample = softClippingADAA(sample, gain, x_prev_adaa);
         break;
     case 3: // Tube Saturation
-        sample = tubeSaturation(sample, intensity * 10.0f);
-        break;
-    case 4: // Multi-stage
-        sample = multiStage(sample, gain, intensity);
+        sample = tubeSaturationADAA(sample, intensity * 10.0f, x_prev_adaa);
         break;
     case 5: // Diode Clipping
-        sample = diodeClipping(sample, 1.0f - (intensity * 0.5f), intensity);
+        sample = diodeClippingADAA(sample, 1.0f - (intensity * 0.5f), intensity, x_prev_adaa);
         break;
     case 6: // Test Distortion
-        sample = testDistortion(sample, gain);
-        break;
-    case 7: // Test Overdrive
-        sample = testOverDrive(sample, intensity);
+        sample = testDistortionADAA(sample, gain, x_prev_adaa);
         break;
     }
 }
@@ -251,7 +390,7 @@ void DistoEffect::update(const float** in, float** out, int idx) {
     distorted = distorted * 0.5f;
 
 
-    processDistortion(distorted, computed_gain, effect_mode, intensity);
+    processDistortion(distorted, computed_gain, effect_mode, intensity, x_prev_adaa, oversamp, os_prev_sample, os_filter);
 
     // Post-filter: Low-pass to smooth out harsh high frequencies
     distorted = postFilter(distorted);
