@@ -17,7 +17,11 @@ public:
     float wetMix;
     float volume;
 
-    daisysp::Oscillator lfo;
+    float phase = 0.0f;
+    float phaseOffset = 0.0f;
+    float phaseIncrement = 0.0f;
+    int waveform = 0;
+    
     daisysp::OnePole lfoFilter;
     float depthVal = 0.5f;
     float anti_denormal = 1e-9f;
@@ -31,6 +35,7 @@ public:
     void setRate(float rate);
     void setWaveform(int waveform);
     void setVolume(float vol);
+    void setPhaseOffset(float offset);
 
     void setParameter(int param_id, float value) override;
 

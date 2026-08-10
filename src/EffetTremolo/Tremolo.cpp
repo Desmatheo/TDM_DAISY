@@ -8,8 +8,10 @@ using namespace daisysp;
 TremoloEffect::TremoloEffect(float sampleRate){
     samplerate = sampleRate;
 
-    lfo.Init(sampleRate);
-    lfo.SetAmp(1.0f);
+    phase = 0.0f;
+    phaseOffset = 0.0f;
+    phaseIncrement = 0.0f;
+    waveform = 0;
     
     lfoFilter.Init();
     lfoFilter.SetFrequency(50.0f / sampleRate); // 50Hz smoothing frequency
@@ -28,7 +30,29 @@ void TremoloEffect::update(const float** in, float** out, int idx) {
     anti_denormal = -anti_denormal;
     inputL = inputR = in[0][idx] + anti_denormal; // Anti-denormal
 
-    float rawLfo = lfo.Process();
+    phase += phaseIncrement;
+    if (phase >= 1.0f) phase -= 1.0f;
+
+    float currentPhase = phase + phaseOffset;
+    if (currentPhase >= 1.0f) currentPhase -= 1.0f;
+
+    float rawLfo = 0.0f;
+    switch (waveform) {
+        case 0: // Sine
+            rawLfo = sinf(currentPhase * 2.0f * (float)M_PI);
+            break;
+        case 1: // Tri
+            if (currentPhase < 0.5f) rawLfo = currentPhase * 4.0f - 1.0f;
+            else rawLfo = 3.0f - (currentPhase * 4.0f);
+            break;
+        case 2: // Square
+            rawLfo = (currentPhase < 0.5f) ? 1.0f : -1.0f;
+            break;
+        case 3: // Saw
+            rawLfo = currentPhase * 2.0f - 1.0f;
+            break;
+    }
+
     float smoothedLfo = lfoFilter.Process(rawLfo);
     
     // Calculate modulation matching daisysp::Tremolo:
@@ -36,8 +60,14 @@ void TremoloEffect::update(const float** in, float** out, int idx) {
     float mod = 1.0f - (depthVal * 0.5f) - (smoothedLfo * depthVal * 0.5f);
     float processed = inputL * mod;
 
-    out[0][idx] = (inputL * dryMix + processed * wetMix) * volume;
-    out[1][idx] = out[0][idx];
+    float final_out = (inputL * dryMix + processed * wetMix) * volume;
+    
+    // Clipper (Sécurité saturation)
+    if (final_out > 0.999f) final_out = 0.999f;
+    if (final_out < -0.999f) final_out = -0.999f;
+
+    out[0][idx] = final_out;
+    out[1][idx] = final_out;
 }
 
 void TremoloEffect::setMix(float mix) {
@@ -50,11 +80,18 @@ void TremoloEffect::setDepth(float val) {
 }
 
 void TremoloEffect::setRate(float val) {
-    lfo.SetFreq(clampf(val * 20.0f, 0.0f, 20.0f));
+    float freq = clampf(val * 20.0f, 0.0f, 20.0f);
+    phaseIncrement = freq / samplerate;
 }
 
 void TremoloEffect::setWaveform(int mode) {
-    lfo.SetWaveform(mode); 
+    waveform = mode;
+}
+
+void TremoloEffect::setPhaseOffset(float offset) {
+    phaseOffset = offset;
+    while (phaseOffset >= 1.0f) phaseOffset -= 1.0f;
+    while (phaseOffset < 0.0f) phaseOffset += 1.0f;
 }
 
 void TremoloEffect::setVolume(float vol){
@@ -72,6 +109,7 @@ void TremoloEffect::setParameter(int param_id, float value) {
             else if (value < 0.8f) setWaveform(2); 
             else setWaveform(3); 
             break; 
+        case 4: setPhaseOffset(value); break;
         case 5: setVolume(value); break;
         default: break;
     }
