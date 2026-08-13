@@ -1,6 +1,6 @@
-// Earth Reverbscape
+// Octaveur Reverbscape
 
-#include "Earth.h"
+#include "Octaveur.h"
 
 #include <span>
 #define USE_DAISY 1
@@ -17,7 +17,7 @@ using namespace daisysp;
 
 #endif
 
-EarthEffect::EarthEffect(float sampleRate)
+OctaveurEffect::OctaveurEffect(float sampleRate)
     : octave(sampleRate / resample_factor)
 #if eq_ON
       , eq1(-11, 140_Hz, sampleRate),
@@ -39,7 +39,7 @@ EarthEffect::EarthEffect(float sampleRate)
 #endif
 }
 
-void EarthEffect::update(const float** in, float** out, int idx) {
+void OctaveurEffect::update(const float** in, float** out, int idx) {
     float inputL;
     float inputR;
 
@@ -48,37 +48,42 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 
     buff[bin_counter] = inputL;
     
+    // On recupère 6 samples, on lance le traitement !
     if (bin_counter > 4) {
         if (wetMix > 0.01f) {
+            // Création d'une fenêtre virtuelle (span) sur nos 6 samples collectés
             std::span<const float, resample_factor> in_chunk(&(buff[0]), resample_factor);
+            
+            // DÉCIMATION : On écrase les 6 samples en 1 seul (divise le CPU par 6)
             const auto sample = decimate2(in_chunk); 
 
             float octave_mix = 0.0;
 
+            // TRAITEMENT LOURD : Le super-sample est envoyé au cerveau (OctaveGenerator)
             octave.update(sample, effect_mode);
 
+            // RÉCUPÉRATION : On demande au cerveau le résultat selon le mode choisi
+            // On multiplie par 6.0f pour compenser la perte de volume causée par la décimation
             if (effect_mode == 1) {
                 float raw_up = octave.up1() * 6.0f;
                 octave_mix += raw_up; 
             }
-            if (effect_mode == 2) octave_mix += octave.down1() *    6.0f;
-            if (effect_mode == 3) octave_mix += octave.down2() *    6.0f;
+            if (effect_mode == 2) octave_mix += octave.down1() * 6.0f;
+            if (effect_mode == 3) octave_mix += octave.down2() * 6.0f;
 
+            // INTERPOLATION : On étire l'unique super-sample calculé pour recréer 6 samples lissés
             auto out_chunk = interpolate(octave_mix);
+            
+            // DISTRIBUTION : On range les 6 samples dans la boîte de sortie (buff_out)
             for (size_t j = 0; j < out_chunk.size(); ++j) {
 #if eq_ON
                 buff_out[j] = eq2(eq1(out_chunk[j]));
 #else
                 buff_out[j] = out_chunk[j];
 #endif
+
             }
-        } 
-        // else {
-        //     // Optimisation CPU : on ne calcule pas l'octaver s'il est coupé
-        //     for (size_t j = 0; j < 6; ++j) {
-        //         buff_out[j] = 0.0f;
-        //     }
-        // }
+        }
     }
 
     // Avance le compteur de temps (0 à 5)
@@ -103,23 +108,23 @@ void EarthEffect::update(const float** in, float** out, int idx) {
 
 // --- Implémentation des Setters Spécifiques ---
 
-void EarthEffect::setMix(float mix) {
+void OctaveurEffect::setMix(float mix) {
     float clampedMix = clampf(mix, 0.0f, 1.0f);
     wetMix = sinf(clampedMix * (float)M_PI_2);
     dryMix = cosf(clampedMix * (float)M_PI_2);
 }
 
-void EarthEffect::setVolume(float vol)
+void OctaveurEffect::setVolume(float vol)
 {
     volume = clampf(vol, 0.0f, 1.0f);
 }
 
-void EarthEffect::setOctaveMode(int mode) {
+void OctaveurEffect::setOctaveMode(int mode) {
     effect_mode = mode;
 }
 
 
-void EarthEffect::setParameter(int param_id, float value) {
+void OctaveurEffect::setParameter(int param_id, float value) {
     switch (param_id){
         case 0 : 
             setMix(value);

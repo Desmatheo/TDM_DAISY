@@ -1,3 +1,13 @@
+/**
+ * @file main.cpp
+ * @brief Point d'entrée principal pour le firmware Daisy Seed (Esclave TDM).
+ *
+ * Ce fichier initialise le matériel (TDM, MIDI sur USB), instancie les
+ * blocs d'effets audio (Octaveur, Delay, Tremolo, Disto, Equalizer) pour chaque canal,
+ * et contient la boucle principale (main loop) qui gère l'envoi de statistiques
+ * CPU et MIDI vers l'hôte (Teensy ou PC).
+ */
+
 #include "Utils/main.h"
 
 using namespace daisy; 
@@ -12,10 +22,11 @@ CpuLoadMeter loadMeter;
 
 DaisyTdmSlave hw;
 
-EarthEffect* earth_effects[6];
+OctaveurEffect* octaveur_effects[6];
 DelayEffect* delay_effects[6];
 TremoloEffect* tremolo_effects[6];
 DistoEffect* disto_effects[6];
+EqualizerEffect* eq_effects[6];
 
 StringUtil strings[] = {
     StringUtil(EffectType::Bypass, 0),
@@ -27,20 +38,30 @@ StringUtil strings[] = {
 };
 
 // ================================================================
-alignas(EarthEffect) static uint8_t earth_mem[6 * sizeof(EarthEffect)];
+// Allocation statique de la mémoire pour les objets d'effets
+// (Evite l'utilisation du tas (heap) dynamique pour des raisons de performance)
+// ================================================================
+alignas(OctaveurEffect) static uint8_t octaveur_mem[6 * sizeof(OctaveurEffect)];
 alignas(DelayEffect) static uint8_t delay_mem[6 * sizeof(DelayEffect)];
 alignas(TremoloEffect) static uint8_t tremolo_mem[6 * sizeof(TremoloEffect)];
 alignas(DistoEffect) static uint8_t disto_mem[6 * sizeof(DistoEffect)];
+alignas(EqualizerEffect) static uint8_t eq_mem[6 * sizeof(EqualizerEffect)];
 
 #define STATUS_PERIOD_MS 1000
 
 // ================================================================
+/**
+ * @brief Point d'entrée du programme.
+ * 
+ * Initialise les différents sous-systèmes de la carte Daisy Seed,
+ * instancie les effets DSP et démarre la boucle audio et de contrôle.
+ */
 int main(void)
 {
     hw.Init(true);
 
-    // Non-blocking USB serial: the board keeps running even if no
-    // serial monitor is connected.
+    // Initialisation série USB non bloquante (la carte tourne même
+    // si aucun moniteur série n'est connecté).
 
 #if ENABLE_SERIAL_LOGGING
     hw.seed.StartLog(false);
@@ -55,22 +76,23 @@ int main(void)
     midi.Init(midi_cfg);
 #endif
 
-    memset(earth_mem, 0, 6 * sizeof(EarthEffect));
+    memset(octaveur_mem, 0, 6 * sizeof(OctaveurEffect));
     memset(delay_mem, 0, 6 * sizeof(DelayEffect));
     memset(tremolo_mem, 0, 6 * sizeof(TremoloEffect));
     memset(disto_mem, 0, 6 * sizeof(DistoEffect));
+    memset(eq_mem, 0, 6 * sizeof(EqualizerEffect));
 
     for (int j = 0; j < 6; j++){ 
-        earth_effects[j] = new(&earth_mem[j * sizeof(EarthEffect)]) EarthEffect((float)DaisyTdmSlave::kSampleRate);
+        octaveur_effects[j] = new(&octaveur_mem[j * sizeof(OctaveurEffect)]) OctaveurEffect((float)DaisyTdmSlave::kSampleRate);
         delay_effects[j] = new(&delay_mem[j * sizeof(DelayEffect)]) DelayEffect((float)DaisyTdmSlave::kSampleRate);
         tremolo_effects[j] = new(&tremolo_mem[j * sizeof(TremoloEffect)]) TremoloEffect((float)DaisyTdmSlave::kSampleRate);
         disto_effects[j] = new(&disto_mem[j * sizeof(DistoEffect)]) DistoEffect((float)DaisyTdmSlave::kSampleRate);
+        eq_effects[j] = new(&eq_mem[j * sizeof(EqualizerEffect)]) EqualizerEffect((float)DaisyTdmSlave::kSampleRate);
     }
 
-    // With block 32 @ 48 kHz the callback should run 1500 times/s.
-    // 0 calls/s means no BCLK/FS from the Teensy: check wiring and that
-    // the Teensy sketch is running. ~1378/s means the Teensy was left at
-    // its default 44.1 kHz (AUDIO_SAMPLE_RATE_EXACT not overridden).
+    // Avec un block size de 32 à 44.1 kHz (fréquence par défaut de la Teensy), 
+    // la callback s'exécute environ 1378 fois par seconde.
+    // 0 appels/s signifie qu'il n'y a pas de BCLK/FS depuis le Teensy (vérifier le câblage).
     uint32_t last_status = System::GetNow();
 
     hw.StartAudio(AudioCallback);

@@ -1,13 +1,23 @@
+/**
+ * @file main.h
+ * @brief En-tête principal regroupant les dépendances et déclarations globales.
+ *
+ * Déclare les tableaux globaux contenant les pointeurs vers les effets 
+ * (pour chaque corde de la guitare hexaphonique) ainsi que les 
+ * structures de routage (StringUtil).
+ */
+
 #pragma once
 #include "Utils.h"
 
 #include "daisy_tdm_slave.h"
 
 #include "Effect.h"
-#include "../EffetEarth/Earth.h"
+#include "../EffetOctaveur/Octaveur.h"
 #include "../EffetDelay/Delay.h"
 #include "../EffetTremolo/Tremolo.h"
 #include "../EffetDisto/Disto.h"
+#include "../EffetEqualizer/Equalizer.h"
 
 
 #if USE_MIDI_USB
@@ -21,27 +31,39 @@ extern CpuLoadMeter loadMeter;
 extern DaisyTdmSlave hw;
 
 
-extern EarthEffect* earth_effects[6];
+extern OctaveurEffect* octaveur_effects[6];
 extern DelayEffect* delay_effects[6];
 extern TremoloEffect* tremolo_effects[6];
 extern DistoEffect* disto_effects[6];
+extern EqualizerEffect* eq_effects[6];
+
+/**
+ * @enum EffectType
+ * @brief Énumération des types d'effets disponibles dans le projet.
+ */
 enum class EffectType {
     Mute,
     Bypass,
-    Earth,
+    Octaveur,
     Delay,
     Disto,
-    Testation,
-    Tremolo
+    Tremolo,
+    Equalizer
 };
 
+/**
+ * @class StringUtil
+ * @brief Représente l'état et le routage des effets pour une corde (String) donnée.
+ * 
+ * Permet de lier une corde (index) à un ou plusieurs effets actifs en série.
+ */
 class StringUtil{
 public : 
-    EffectType type;
-    int index;
-    Effect* active_effect;
-    Effect* active_effect_bonus;
-    Effect* active_effect_bonus_bonus;
+    EffectType type;                    /**< Type d'effet principal actif sur cette corde. */
+    int index;                          /**< Index de la corde (0 à 5). */
+    Effect* active_effect;              /**< Pointeur vers l'effet principal. */
+    Effect* active_effect_bonus;        /**< Pointeur vers un effet secondaire (en série). */
+    Effect* active_effect_bonus_bonus;  /**< Pointeur vers un troisième effet. */
 
     StringUtil(EffectType type, int index){
         this->type = type;

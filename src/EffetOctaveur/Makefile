@@ -1,9 +1,9 @@
 # Project Name
-TARGET = testEarthHexa
+TARGET = testOctaveurHexa
 
 # Sources
 # Use 'wildcard' to automatically find all .cpp files.
-CPP_SOURCES = Earth.cpp
+CPP_SOURCES = Octaveur.cpp
 CPP_SOURCES += $(wildcard Dattorro/*.cpp)
 CPP_SOURCES += $(wildcard Dattorro/dsp/delays/*.cpp)
 CPP_SOURCES += $(wildcard Dattorro/dsp/filters/*.cpp)

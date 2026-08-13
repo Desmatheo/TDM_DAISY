@@ -1,20 +1,24 @@
+/**
+ * @file audio_processing.h
+ * @brief Gestion du traitement audio principal (callback) pour la carte Daisy.
+ */
+
 #ifndef AUDIO_PROCESSING_H
 #define AUDIO_PROCESSING_H
 
 #include "main.h" 
 
-
 extern DaisyTdmSlave hw;
-
 extern CpuLoadMeter loadMeter;
 
-
-// ================================================================
-// Diagnostics shared between the audio callback (IRQ context) and the
-// main loop. Written by the callback, read + reset by main().
-// Never print from the audio callback: it runs in an interrupt and
-// USB logging there can block the whole audio engine.
-// ================================================================
+/**
+ * @struct AudioDiagnostics
+ * @brief Structure de diagnostic partagée entre la callback audio (contexte IRQ) et la boucle principale.
+ * 
+ * Modifiée par la callback, lue et réinitialisée par le main().
+ * @warning Ne jamais utiliser de fonctions d'affichage (print) depuis la callback audio
+ * car elle s'exécute dans une interruption et cela bloquerait le moteur audio.
+ */
 struct AudioDiagnostics
 {
     volatile uint32_t callback_count = 0;
@@ -29,18 +33,19 @@ struct AudioDiagnostics
 
 static AudioDiagnostics audio_diag;
 
-// ================================================================
-// Audio callback -- runs at 48 kHz / blocksize (1500 Hz for block 32),
-// clocked by the Teensy TDM master.
-//
-//   in[0..5]  : the 6 hexaphonic channels sent by the Teensy (slots 0..5)
-//   in[6..7]  : unused slots (silence as long as the Teensy sends nothing)
-//   out[0..7] : the 8 channels sent back to the Teensy (slots 0..7)
-//
-// Routage actuel : Pass-through Hexaphonique (6 canaux) depuis l'USB (Teensy)
-//   out[0..5] = in[0..5] (Canaux 1 à 6)
-//   Les autres sorties sont mises au silence.
-// ================================================================
+/**
+ * @brief Fonction de rappel (Callback) audio principale.
+ * 
+ * Cette fonction s'exécute à la fréquence d'échantillonnage divisée par la taille du bloc
+ * (par exemple 1378 Hz pour 44.1 kHz avec un bloc de 32), cadencée par le maître TDM Teensy.
+ *
+ * @param in[0..5] Les 6 canaux hexaphoniques envoyés par la Teensy (slots 0..5).
+ * @param in[6..7] Slots inutilisés (silence si la Teensy n'envoie rien).
+ * @param out[0..7] Les 8 canaux renvoyés vers la Teensy.
+ *
+ * @note Routage actuel : Pass-through Hexaphonique (6 canaux) avec traitement des effets
+ * en série. Les sorties non utilisées sont mises au silence.
+ */
 // ================================================================
 // Variables pour le Noise Gate (6 canaux)
 // ================================================================
@@ -78,33 +83,47 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 float abs_in = fabsf(in_sample);
                 
                 // ==========================================
-                // NOISE GATE 
+                // NOISE GATE (Porte de bruit)
                 // ==========================================
-                // 1. Suivi d'enveloppe (Envelope Follower)
+                // 1. Suivi d'enveloppe (Filtre Passe-Bas IIR)
+                // On lisse l'onde brute pour obtenir une courbe de volume global (l'enveloppe).
+                // Formule exponentielle : Nouvelle_Position = Ancienne + Vitesse * (Cible - Ancienne)
                 if (abs_in > env[j]) {
-                    env[j] += NOISE_GATE_ATTACK * (abs_in - env[j]); // Attaque rapide
+                    env[j] += NOISE_GATE_ATTACK * (abs_in - env[j]); // L'enveloppe grimpe très vite (Coup de médiator)
                 } else {
-                    env[j] += NOISE_GATE_RELEASE * (abs_in - env[j]); // Relâchement lent
+                    env[j] += NOISE_GATE_RELEASE * (abs_in - env[j]); // L'enveloppe redescend en douceur pour lier les notes
                 }
 
-                // 2. Détermination de la cible du gain (Ouvert = 1.0, Fermé = 0.0)
+                // 2. Cible du gain : Si l'enveloppe est sous le seuil, la porte doit se fermer (0.0).
                 float target_gain = (env[j] > NOISE_GATE_THRESHOLD) ? 1.0f : 0.0f;
                 
-                // 3. Lissage du gain pour éviter le "zipper noise" (clics)
+                // 3. Lissage du gain : On empêche la porte de se claquer d'un coup (ce qui ferait un 'clic').
+                // On utilise la même formule exponentielle pour glisser doucement de 1.0 vers 0.0.
                 gate_gain[j] += NOISE_GATE_SMOOTH * (target_gain - gate_gain[j]); 
                 
-                // 4. Application du gain au signal d'entrée
+                // 4. VCA : On coupe ou on laisse passer le son final.
                 in_sample *= gate_gain[j];
                 // ==========================================
 
+                // ==========================================
+                // LE WRAPPER / ADAPTATEUR STÉRÉO
+                // ==========================================
+                // Problème : Nos effets DSP (delay, tremolo...) attendent un énorme tableau Stéréo (const float**).
+                // Mais ici, nous ne traitons qu'une seule corde et un seul sample (in_sample) !
+                // Solution : On crée des "tableaux déguisements" temporaires sur la pile (Stack).
+                
+                // On crée un tableau 2D de taille [2][1] (Gauche et Droite, 1 sample chacun)
                 float in_arr[2][1] = {{in_sample}, {in_sample}};
+                // On crée un tableau de pointeurs qui pointe vers nos canaux pour correspondre à la signature de update()
                 const float* in_ptrs[2] = {in_arr[0], in_arr[1]};
                 
+                // On prépare la boîte de réception (remplie de silence 0.0f) et ses pointeurs
                 float out_arr[2][1] = {{0.0f}, {0.0f}};
                 float* out_ptrs[2] = {out_arr[0], out_arr[1]};
+                
                 float out_sample = 0.0f;
-
-                float current_sample = in_sample;
+                float current_sample = in_sample; // Le sample prêt à traverser le pedalboard
+                // ==========================================
 
                 // Stage 1
                 if (strings[j].active_effect != nullptr) {

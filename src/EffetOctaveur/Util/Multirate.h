@@ -27,16 +27,21 @@ class Decimator2
 public:
     float operator()(std::span<const float, resample_factor> s)
     {
+        // Étape 1 : Diviser par 3
+        // On prend les 3 premiers samples et on les fusionne (filter1)
         buffer1.push(s[0]);
         buffer1.push(s[1]);
         buffer1.push(s[2]);
         buffer2.push(filter1());
 
+        // On prend les 3 derniers samples et on les fusionne (filter1)
         buffer1.push(s[3]);
         buffer1.push(s[4]);
         buffer1.push(s[5]);
         buffer2.push(filter1());
 
+        // Étape 2 : Diviser par 2
+        // On prend les 2 samples résultants intermédiaires et on les écrase en 1 seul (filter2)
         return filter2();
     }
 
@@ -94,19 +99,28 @@ public:
     {
         std::array<float, resample_factor> output;
 
+        // On injecte le sample unique
         buffer1.push(s);
 
+        // Étape 1 : Multiplier par 2 (Filtres Polyphases 1a et 1b)
+        // filter1a calcule le 1er point intermédiaire
         buffer2.push(filter1a());
+        
+        // Étape 2 : Multiplier par 3 (Filtres Polyphases 2a, 2b, 2c)
+        // Ils utilisent le point intermédiaire pour déduire les 3 premiers samples finaux
         output[0] = filter2a();
         output[1] = filter2b();
         output[2] = filter2c();
 
+        // On calcule le 2ème point intermédiaire (filter1b sur la même mémoire)
         buffer2.push(filter1b());
+        
+        // Et on déduit les 3 derniers samples finaux
         output[3] = filter2a();
         output[4] = filter2b();
         output[5] = filter2c();
 
-        return output;
+        return output; // On retourne nos 6 samples lissés et parfaits
     }
 
 private:

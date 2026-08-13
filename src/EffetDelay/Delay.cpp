@@ -12,6 +12,14 @@ void DelayEffect::DelayChannel::Init(float* mem, float sampleRate, uint32_t max_
     buf_len = max_delay_samples;
     write_idx = 0;
     
+    // TRÈS IMPORTANT : La SDRAM n'est pas initialisée par défaut sur la Daisy.
+    // Il faut la remplir de zéros pour éviter les NaNs (qui font planter le son).
+    if (buffer != nullptr) {
+        for (uint32_t i = 0; i < buf_len; i++) {
+            buffer[i] = 0.0f;
+        }
+    }
+    
     // Initialisation du filtre Tone (Low-pass 1-pole) à 3000 Hz
     float tone_hz = 3000.0f;
     float alpha = expf(-2.0f * (float)PI * tone_hz / sampleRate);

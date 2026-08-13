@@ -6,13 +6,14 @@ TARGET = daisy_tdm_hexa
 
 # Sources
 CPP_SOURCES = 	src/main.cpp \
-             	$(wildcard src/EffetEarth/Earth.cpp) \
+             	$(wildcard src/EffetOctaveur/Octaveur.cpp) \
              	$(wildcard src/EffetDelay/Delay.cpp) \
               	$(wildcard src/EffetDisto/Disto.cpp) \
               	$(wildcard src/EffetTremolo/Tremolo.cpp) \
-              	$(wildcard src/EffetEarth/Dattorro/*.cpp) \
-              	$(wildcard src/EffetEarth/Dattorro/dsp/delays/*.cpp) \
-              	$(wildcard src/EffetEarth/Dattorro/dsp/filters/*.cpp) \
+              	$(wildcard src/EffetEqualizer/*.cpp) \
+              	$(wildcard src/EffetOctaveur/Dattorro/*.cpp) \
+              	$(wildcard src/EffetOctaveur/Dattorro/dsp/delays/*.cpp) \
+              	$(wildcard src/EffetOctaveur/Dattorro/dsp/filters/*.cpp) \
               	$(wildcard src/Utils/toneDaisySP/*.cpp) \
 
 

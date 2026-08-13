@@ -42,7 +42,7 @@ class DaisyTdmSlave
      *  NOT seed.AudioSampleRate(), which reports the nominal SAI config
      *  and is meaningless in slave mode. */
     // static constexpr float kSampleRate = 48000.f;
-    static constexpr float kSampleRate = 44117.647f; // Fréquence par défaut EXACTE de la Teensy 4.x
+    static constexpr float kSampleRate = 44100.0f; // Fréquence par défaut EXACTE de la Teensy 4.x
     daisy::DaisySeed seed;
 
     void Init(bool boost = true)

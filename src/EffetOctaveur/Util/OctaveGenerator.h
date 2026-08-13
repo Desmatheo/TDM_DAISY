@@ -21,16 +21,23 @@ public:
    void update(float sample, int type)
     {
         int numBand;
+        
+        // Purge des variables ou on accumule les résultats de chaque tranche de fréquence
         _up1 = 0;
         _down1 = 0;
         _down2 = 0;
 
+        // Optimisation CPU : Si on veut du grave, on coupe complètement les 12 tranches aiguës
         if (type == 1) numBand = 24;
         if (type == 2) numBand = 12;
         if (type == 3) numBand = 12;
 
+        // Boucle sur les sous-unités (BandShifters)
         for (int i = 0; i < numBand; i++) {
+            // Le sample traverse la tranche de fréquence N° i
             _shifters[i].update(sample, type);
+            
+            // RECONSTRUCTION : On additionne (+=) le résultat de cette tranche au mix global
             if (type == 1) _up1 += _shifters[i].up1();
             if (type == 2 || type == 3) _down1 += _shifters[i].down1();
             if (type == 3) _down2 += _shifters[i].down2();

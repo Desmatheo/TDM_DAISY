@@ -73,11 +73,17 @@ public:
 
     void update_filter(float sample, int type)
     {
+        // FILTRE ANALYTIQUE : Transforme le signal réel en signal complexe (Vecteur 2D)
+        // La partie Réelle de _y contient le son filtré normal.
+        // La partie Imaginaire contient son clone décalé de 90° dans le temps (Quadrature).
         const auto prev_y = _y;
+        
+        // _s2 et _s1 sont les tampons de mémoire du filtre IIR (Forme Directe II Transposée)
         _y = _s2 + _d0*sample;
         _s2 = _s1 + _d1*sample - _c1*_y;
         _s1 = _d2*sample - _c2*_y;
 
+        // Compteur de tours pour détecter les inversions de phase
         if (type != 1){
             if ((_y.real() < 0) &&
                 (std::signbit(_y.imag()) != std::signbit(prev_y.imag())))
@@ -121,11 +127,14 @@ public:
         // Soft-clamp qui supprime parfaitement les grésillements
         const auto safe_mag = (mag_sq < 1e-4f) ? 1e-4f : mag_sq;
 
+        // MATHÉMATIQUES : Formules d'angle moitié pour diviser la fréquence par 2
+        // c et d représentent le Cosinus et Sinus de l'angle divisé par deux
         const auto x = 0.5f * a * fastInvSqrt(safe_mag);
         const auto c = fastSqrt(std::max(0.0f, 0.5f + x));
         const auto d = b_sign * fastSqrt(std::max(0.0f, 0.5f - x));
 
         const auto prev_down1 = _down1;
+        // On force le vecteur complexe d'origine à tourner 2 fois moins vite
         _down1 = _down1_sign * std::complex<float>((a*c + b*d), (b*c - a*d));
 
         if ((_down1.real() < 0) &&
