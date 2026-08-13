@@ -18,6 +18,8 @@
 #include "../EffetTremolo/Tremolo.h"
 #include "../EffetDisto/Disto.h"
 #include "../EffetEqualizer/Equalizer.h"
+#include "../EffetNoiseGate/NoiseGate.h"
+#include "../EffetCompresseur/Compresseur.h"
 
 
 #if USE_MIDI_USB
@@ -36,6 +38,8 @@ extern DelayEffect* delay_effects[6];
 extern TremoloEffect* tremolo_effects[6];
 extern DistoEffect* disto_effects[6];
 extern EqualizerEffect* eq_effects[6];
+extern NoiseGateEffect* noisegate_effects[6];
+extern CompresseurEffect* compresseur_effects[6];
 
 /**
  * @enum EffectType
@@ -48,7 +52,9 @@ enum class EffectType {
     Delay,
     Disto,
     Tremolo,
-    Equalizer
+    Equalizer,
+    NoiseGate,
+    Compressor
 };
 
 /**
