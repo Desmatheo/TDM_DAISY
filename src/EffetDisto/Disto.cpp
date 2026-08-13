@@ -56,20 +56,31 @@ void DistoEffect::InitializeFilters() {
     os_filter.SetDrive(0.0f);
 }
 
-float hardClipping(float input, float threshold) { return std::clamp(input, -threshold, threshold); }
+float hardClipping(float input, float threshold) { 
+    // Écrêtage dur (Hard Clipping) : On coupe brutalement tout ce qui dépasse le seuil.
+    // Cela crée des harmoniques très agressives (fuzz, distorsion lourde).
+    return std::clamp(input, -threshold, threshold); 
+}
 
 float diodeClipping(float input, float threshold, float intensity) {
-    // Boost signal beforehand to make it hit the threshold earlier
-    float preGain = 1.0f + intensity * 4.0f; // up to 5x gain
+    // Écrêtage à Diodes (Soft Clipping / Overdrive)
+    // Simule la courbe de saturation douce de diodes analogiques.
+    
+    // 1. On booste le signal pour qu'il frappe le plafond plus vite (Gain)
+    float preGain = 1.0f + intensity * 4.0f; // Jusqu'à 5x de gain
     input *= preGain;
     float out;
+    
+    // 2. Saturation exponentielle douce au-delà du seuil
     if (input > threshold)
         out = threshold - fastexp(-(input - threshold));
     else if (input < -threshold)
         out = -threshold + fastexp(input + threshold);
     else
-        out = input;
-    return out / preGain; // compensate volume
+        out = input; // En dessous du seuil, le son reste clair
+        
+    // 3. Compensation du volume de sortie
+    return out / preGain; 
 }
 
 float testDistortion(float input, float gainVal){

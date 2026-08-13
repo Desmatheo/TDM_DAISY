@@ -4,6 +4,7 @@ using namespace daisy;
 using namespace daisysp;
 
 // Allocation en SDRAM des buffers pour 6 cordes, 4 secondes en mono (48kHz)
+// La SDRAM (mémoire externe) est indispensable car la RAM interne du processeur est trop petite pour stocker des secondes d'audio.
 DSY_SDRAM_BSS float delay_buffers[6][MAX_DELAY_SAMPLES];
 static int next_buffer_idx = 0;
 
@@ -13,21 +14,22 @@ void DelayEffect::DelayChannel::Init(float* mem, float sampleRate, uint32_t max_
     write_idx = 0;
     
     // TRÈS IMPORTANT : La SDRAM n'est pas initialisée par défaut sur la Daisy.
-    // Il faut la remplir de zéros pour éviter les NaNs (qui font planter le son).
+    // Il faut la remplir de zéros pour éviter les NaNs (Not a Number) qui font planter le moteur audio.
     if (buffer != nullptr) {
         for (uint32_t i = 0; i < buf_len; i++) {
             buffer[i] = 0.0f;
         }
     }
     
-    // Initialisation du filtre Tone (Low-pass 1-pole) à 3000 Hz
+    // Initialisation du filtre Tone (Low-pass 1-pole / Filtre RC numérique) à 3000 Hz
+    // Ce filtre sert à assombrir les répétitions successives pour simuler un delay analogique (Bucket Brigade).
     float tone_hz = 3000.0f;
     float alpha = expf(-2.0f * (float)PI * tone_hz / sampleRate);
     tone_a0 = 1.0f - alpha;
     tone_b1 = alpha;
     tone_z1 = 0.0f;
 
-    // A 48kHz, 2400 samples = 50ms (valeur par défaut)
+    // A 48kHz (ou 44.1kHz), 2400 samples = ~50ms (valeur par défaut)
     currentDelay = 2400.0f;
     delayTarget = 2400.0f;
     feedback = 0.5f;
@@ -40,35 +42,40 @@ void DelayEffect::DelayChannel::Init(float* mem, float sampleRate, uint32_t max_
 float DelayEffect::DelayChannel::Process(float in) {
     if (!buffer) return in;
 
-    // Si le potard est en train d'être tourné (la cible change)
+    // 1. GESTION DU STANDBY (Changement de temps de delay)
+    // Si le potard est en train d'être tourné (la cible change), on coupe le son (Mute)
+    // pour éviter les bruits de "vaisseau spatial" (pitch-shifting dû au parcours de la mémoire).
     if (fabsf(delayTarget - lastTarget) > 0.1f) {
         lastTarget = delayTarget;
-        standbyTimer = 10000; // Maintient le standby pendant ~208ms après le dernier mouvement
+        standbyTimer = 10000; // Maintient le standby pendant environ 200ms après le dernier mouvement
     }
 
     if (standbyTimer > 0) {
         standbyTimer--;
         
-        // Fade-out ultra-rapide
+        // Fade-out ultra-rapide (fermeture de l'enveloppe)
         muteFade -= 0.01f;
         if (muteFade <= 0.0f) {
             muteFade = 0.0f;
-            // Dès qu'on est sous silence, le pointeur saute instantanément (aucun pitch-shift)
+            // Dès qu'on est sous silence total, le pointeur de lecture saute instantanément à sa nouvelle cible
             currentDelay = delayTarget;
         }
     } else {
-        // Le potard ne bouge plus, on sort du standby (Fade-in)
+        // Le potard ne bouge plus, on sort du standby (Fade-in / ouverture de l'enveloppe)
         muteFade += 0.01f;
         if (muteFade > 1.0f) {
             muteFade = 1.0f;
         }
     }
 
-    // Lecture du son retardé avec interpolation linéaire
+    // 2. LECTURE (Tête de lecture)
+    // Calcul de la position de la tête de lecture dans le tampon circulaire (en arrière par rapport à la tête d'écriture)
     float read_idx_f = (float)write_idx - currentDelay;
     while (read_idx_f < 0.0f) read_idx_f += (float)buf_len;
     while (read_idx_f >= (float)buf_len) read_idx_f -= (float)buf_len;
 
+    // Interpolation linéaire : comme la distance de lecture (read_idx_f) tombe souvent entre deux échantillons (virgule),
+    // on lit l'échantillon r0 et le suivant r1, et on fait une moyenne pondérée (frac) pour éviter les artefacts granuleux.
     uint32_t r0 = (uint32_t)read_idx_f;
     uint32_t r1 = r0 + 1; 
     if (r1 >= buf_len) r1 = 0;
@@ -76,24 +83,30 @@ float DelayEffect::DelayChannel::Process(float in) {
 
     float del_read = buffer[r0] + (buffer[r1] - buffer[r0]) * frac;
 
+    // 3. APPLICATION DES MODIFICATEURS
     // Application du fade pour le mode standby
     del_read *= muteFade;
 
-    // Application du filtre passe-bas
+    // Application du filtre passe-bas sur la répétition lue
     float read = tone_a0 * del_read + tone_b1 * tone_z1;
     tone_z1 = read;
 
-    // Écriture dans la ligne de delay (avec feedback et anti-denormal)
+    // 4. ÉCRITURE (Tête d'écriture)
+    // "Anti-denormal" : Les très petites valeurs décimales (ex: 1e-38) ralentissent énormément le CPU.
+    // On ajoute/soustrait un bruit imperceptible pour forcer le processeur à arrondir à 0.
     anti_denormal = -anti_denormal;
+    
+    // Le nouveau son à stocker est le signal lu (atténué par le feedback) + la note qu'on est en train de jouer (in)
     float write_val = feedback * read + anti_denormal;
     if (active) {
         write_val += in;
     }
     
-    // Limiteur de saturation interne
+    // Limiteur de saturation interne (Clipping)
     if (write_val > 1.0f) write_val = 1.0f;
     if (write_val < -1.0f) write_val = -1.0f;
     
+    // Stockage et avancement de la tête d'écriture (Buffer Circulaire)
     buffer[write_idx] = write_val;
 
     write_idx++;

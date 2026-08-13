@@ -106,6 +106,16 @@ static void HandleMidiMessages(){
                 int potard = control - 70;
                 eq_effects[corde]->setParameter(potard, value_norm);
             }
+            // NoiseGate (CC 120-122)
+            else if (control >= 120 && control <= 122) {
+                int potard = control - 120;
+                noisegate_effects[corde]->setParameter(potard, value_norm);
+            }
+            // Compresseur (CC 100-104)
+            else if (control >= 100 && control <= 104) {
+                int potard = control - 100;
+                compresseur_effects[corde]->setParameter(potard, value_norm);
+            }
             // --- A. RESET DES SLOTS DE LA CORDE ---
             // CC 9 : Bouton pour vider complètement les slots d'effets de cette corde
             else if (control == 9) {
@@ -127,6 +137,8 @@ static void HandleMidiMessages(){
                 else if (cc.value == 3) selected_effect = octaveur_effects[corde];
                 else if (cc.value == 4) selected_effect = tremolo_effects[corde];
                 else if (cc.value == 5) selected_effect = eq_effects[corde];
+                else if (cc.value == 6) selected_effect = noisegate_effects[corde];
+                else if (cc.value == 7) selected_effect = compresseur_effects[corde];
 
                 if (control == 20) strings[corde].active_effect = selected_effect;
                 else if (control == 21) strings[corde].active_effect_bonus = selected_effect;

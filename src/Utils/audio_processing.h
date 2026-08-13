@@ -83,11 +83,12 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 float abs_in = fabsf(in_sample);
                 
                 // ==========================================
-                // NOISE GATE (Porte de bruit)
+                // NOISE GATE (Porte de bruit) - Commenté en attendant d'utiliser la classe
                 // ==========================================
                 // 1. Suivi d'enveloppe (Filtre Passe-Bas IIR)
                 // On lisse l'onde brute pour obtenir une courbe de volume global (l'enveloppe).
                 // Formule exponentielle : Nouvelle_Position = Ancienne + Vitesse * (Cible - Ancienne)
+                
                 if (abs_in > env[j]) {
                     env[j] += NOISE_GATE_ATTACK * (abs_in - env[j]); // L'enveloppe grimpe très vite (Coup de médiator)
                 } else {
@@ -102,7 +103,8 @@ static void AudioCallback(daisy::AudioHandle::InputBuffer  in,
                 gate_gain[j] += NOISE_GATE_SMOOTH * (target_gain - gate_gain[j]); 
                 
                 // 4. VCA : On coupe ou on laisse passer le son final.
-                in_sample *= gate_gain[j];
+                in_sample *= gate_gain[j]; 
+                
                 // ==========================================
 
                 // ==========================================

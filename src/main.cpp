@@ -27,6 +27,8 @@ DelayEffect* delay_effects[6];
 TremoloEffect* tremolo_effects[6];
 DistoEffect* disto_effects[6];
 EqualizerEffect* eq_effects[6];
+NoiseGateEffect* noisegate_effects[6];
+CompresseurEffect* compresseur_effects[6];
 
 StringUtil strings[] = {
     StringUtil(EffectType::Bypass, 0),
@@ -46,6 +48,8 @@ alignas(DelayEffect) static uint8_t delay_mem[6 * sizeof(DelayEffect)];
 alignas(TremoloEffect) static uint8_t tremolo_mem[6 * sizeof(TremoloEffect)];
 alignas(DistoEffect) static uint8_t disto_mem[6 * sizeof(DistoEffect)];
 alignas(EqualizerEffect) static uint8_t eq_mem[6 * sizeof(EqualizerEffect)];
+alignas(NoiseGateEffect) static uint8_t noisegate_mem[6 * sizeof(NoiseGateEffect)];
+alignas(CompresseurEffect) static uint8_t compresseur_mem[6 * sizeof(CompresseurEffect)];
 
 #define STATUS_PERIOD_MS 1000
 
@@ -81,6 +85,8 @@ int main(void)
     memset(tremolo_mem, 0, 6 * sizeof(TremoloEffect));
     memset(disto_mem, 0, 6 * sizeof(DistoEffect));
     memset(eq_mem, 0, 6 * sizeof(EqualizerEffect));
+    memset(noisegate_mem, 0, 6 * sizeof(NoiseGateEffect));
+    memset(compresseur_mem, 0, 6 * sizeof(CompresseurEffect));
 
     for (int j = 0; j < 6; j++){ 
         octaveur_effects[j] = new(&octaveur_mem[j * sizeof(OctaveurEffect)]) OctaveurEffect((float)DaisyTdmSlave::kSampleRate);
@@ -88,6 +94,8 @@ int main(void)
         tremolo_effects[j] = new(&tremolo_mem[j * sizeof(TremoloEffect)]) TremoloEffect((float)DaisyTdmSlave::kSampleRate);
         disto_effects[j] = new(&disto_mem[j * sizeof(DistoEffect)]) DistoEffect((float)DaisyTdmSlave::kSampleRate);
         eq_effects[j] = new(&eq_mem[j * sizeof(EqualizerEffect)]) EqualizerEffect((float)DaisyTdmSlave::kSampleRate);
+        noisegate_effects[j] = new(&noisegate_mem[j * sizeof(NoiseGateEffect)]) NoiseGateEffect((float)DaisyTdmSlave::kSampleRate);
+        compresseur_effects[j] = new(&compresseur_mem[j * sizeof(CompresseurEffect)]) CompresseurEffect((float)DaisyTdmSlave::kSampleRate);
     }
 
     // Avec un block size de 32 à 44.1 kHz (fréquence par défaut de la Teensy), 

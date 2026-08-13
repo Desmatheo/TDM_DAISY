@@ -44,10 +44,14 @@ public:
 
     void update(float sample, int type)
     {
+        // 1. On passe toujours le sample brut dans la "passoire" (Filtre Analytique)
+        // Cela le nettoie et le transforme en Vecteur Complexe 2D
         update_filter(sample, type);
-        if (type == 1) update_up1();
-        if (type == 2 || type == 3) update_down1();
-        if (type == 3) update_down2();
+        
+        // 2. Selon le mode choisi, on manipule la vitesse de rotation de ce vecteur complexe
+        if (type == 1) update_up1(); // Multiplie la fréquence par 2
+        if (type == 2 || type == 3) update_down1(); // Divise la fréquence par 2
+        if (type == 3) update_down2(); // Re-divise la fréquence par 2 (pour l'octave -2)
     }
 
     float up1() const {
