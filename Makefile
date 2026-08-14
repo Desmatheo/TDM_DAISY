@@ -11,6 +11,8 @@ CPP_SOURCES = 	src/main.cpp \
               	$(wildcard src/EffetDisto/Disto.cpp) \
               	$(wildcard src/EffetTremolo/Tremolo.cpp) \
               	$(wildcard src/EffetEqualizer/*.cpp) \
+              	$(wildcard src/EffetCompresseur/*.cpp) \
+              	$(wildcard src/EffetNoiseGate/*.cpp) \
               	$(wildcard src/EffetOctaveur/Dattorro/*.cpp) \
               	$(wildcard src/EffetOctaveur/Dattorro/dsp/delays/*.cpp) \
               	$(wildcard src/EffetOctaveur/Dattorro/dsp/filters/*.cpp) \
